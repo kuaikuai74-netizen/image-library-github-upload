@@ -1,0 +1,1704 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="跨境商品视觉资产库的局域网网页设计原型。"
+    />
+    <title>素材库 · 视觉资产浏览</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f3f5f3;
+        --panel: #ffffff;
+        --panel-soft: #edf1ee;
+        --panel-strong: #e6ebe7;
+        --text: #1a2420;
+        --muted: #647069;
+        --subtle: #8a958f;
+        --border: #d8dfda;
+        --accent: #18776b;
+        --accent-strong: #105b53;
+        --accent-soft: #dceee8;
+        --warm: #c96e38;
+        --warm-soft: #fae4d6;
+        --shadow: 0 8px 24px rgba(33, 49, 41, 0.08);
+      }
+
+      [data-theme="dark"] {
+        color-scheme: dark;
+        --canvas: #111614;
+        --panel: #171d1a;
+        --panel-soft: #202824;
+        --panel-strong: #28312d;
+        --text: #f0f4f1;
+        --muted: #aab6ae;
+        --subtle: #7f8d85;
+        --border: #303a35;
+        --accent: #80c8b0;
+        --accent-strong: #b1e3d0;
+        --accent-soft: #1f3930;
+        --warm: #f2a36d;
+        --warm-soft: #3a2a21;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--canvas);
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        background: var(--canvas);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: grid;
+        grid-template-columns: minmax(190px, 250px) minmax(260px, 1fr) auto;
+        align-items: center;
+        min-height: 68px;
+        gap: 24px;
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--canvas) 94%, transparent);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid var(--accent);
+        border-radius: 7px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .brand-mark svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .brand-copy {
+        min-width: 0;
+      }
+
+      .brand-name {
+        display: block;
+        font-weight: 760;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+
+      .brand-kicker,
+      .layer-label,
+      .eyebrow {
+        margin: 0;
+        color: var(--subtle);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .global-search {
+        display: flex;
+        align-items: center;
+        width: min(100%, 680px);
+        min-height: 40px;
+        gap: 9px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel);
+        color: var(--muted);
+      }
+
+      .global-search:focus-within {
+        border-color: var(--accent);
+      }
+
+      .global-search svg {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 auto;
+      }
+
+      .global-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text);
+      }
+
+      .global-search input::placeholder {
+        color: var(--subtle);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .icon-button,
+      .avatar-button,
+      .view-action,
+      .select-button {
+        display: inline-grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel);
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .icon-button:hover,
+      .avatar-button:hover,
+      .view-action:hover,
+      .select-button:hover {
+        border-color: var(--accent);
+        color: var(--accent-strong);
+      }
+
+      .icon-button svg,
+      .view-action svg,
+      .select-button svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .upload-button {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px;
+        gap: 7px;
+        border: 1px solid var(--accent);
+        border-radius: 7px;
+        padding: 0 12px;
+        background: var(--accent);
+        color: #ffffff;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      .upload-button:hover {
+        background: var(--accent-strong);
+      }
+
+      .upload-button svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .avatar-button {
+        border: 0;
+        background: var(--warm-soft);
+        color: var(--warm);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .app-body {
+        display: grid;
+        grid-template-columns: 246px minmax(0, 1fr);
+        min-height: calc(100vh - 68px);
+      }
+
+      .channel-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        border-right: 1px solid var(--border);
+        padding: 24px 16px;
+      }
+
+      .channel-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0 8px;
+      }
+
+      .channel-heading h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .channel-list {
+        display: grid;
+        gap: 5px;
+      }
+
+      .channel-item {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        align-items: center;
+        width: 100%;
+        min-height: 46px;
+        gap: 8px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        padding: 0 9px;
+        background: transparent;
+        color: var(--muted);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .channel-item:hover {
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      .channel-item[aria-current="true"] {
+        border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .channel-symbol {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--subtle);
+      }
+
+      .channel-item[aria-current="true"] .channel-symbol {
+        border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+        color: var(--accent-strong);
+      }
+
+      .channel-symbol svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .channel-name {
+        overflow: hidden;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .channel-count {
+        color: var(--subtle);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .rail-note {
+        margin-top: auto;
+        border-top: 1px solid var(--border);
+        padding: 16px 8px 0;
+      }
+
+      .rail-note p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .workspace {
+        min-width: 0;
+        padding: 30px 30px 44px;
+      }
+
+      .context-header {
+        display: grid;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 22px;
+      }
+
+      .breadcrumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+        color: var(--subtle);
+        font-size: 12px;
+      }
+
+      .breadcrumb svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .breadcrumb strong {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .title-line {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .page-title {
+        margin: 3px 0 0;
+        font-size: 25px;
+        line-height: 1.22;
+      }
+
+      .title-stats {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 9px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .stat-pill strong {
+        margin-right: 4px;
+        color: var(--text);
+      }
+
+      .layer-section {
+        padding-top: 22px;
+      }
+
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .section-heading h2 {
+        margin: 2px 0 0;
+        font-size: 15px;
+      }
+
+      .section-note {
+        color: var(--subtle);
+        font-size: 12px;
+      }
+
+      .group-scroller {
+        display: grid;
+        grid-auto-columns: minmax(255px, 300px);
+        grid-auto-flow: column;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+      }
+
+      .group-card {
+        display: grid;
+        grid-template-columns: 70px minmax(0, 1fr);
+        align-items: center;
+        min-height: 104px;
+        gap: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        background: var(--panel);
+        color: var(--text);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .group-card:hover {
+        border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+        box-shadow: var(--shadow);
+      }
+
+      .group-card[aria-current="true"] {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+
+      .group-cover {
+        width: 70px;
+        height: 82px;
+        overflow: hidden;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background-image: url("./assets/reference-library.png");
+        background-repeat: no-repeat;
+        background-size: 940% auto;
+      }
+
+      .cover-0 { background-position: 0% 28%; }
+      .cover-1 { background-position: 15% 28%; }
+      .cover-2 { background-position: 31% 28%; }
+      .cover-3 { background-position: 45% 28%; }
+      .cover-4 { background-position: 60% 28%; }
+      .cover-5 { background-position: 74% 28%; }
+      .cover-6 { background-position: 88% 28%; }
+
+      .group-copy {
+        min-width: 0;
+      }
+
+      .group-name {
+        overflow: hidden;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 780;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .group-meta,
+      .group-count {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .group-count strong {
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .filter-toolbar {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(132px, 1fr)) auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .field {
+        display: grid;
+        min-width: 0;
+        gap: 5px;
+      }
+
+      .field span {
+        color: var(--subtle);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .field select {
+        width: 100%;
+        height: 37px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 28px 0 10px;
+        background: var(--panel);
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .clear-filter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 37px;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 11px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .clear-filter:hover {
+        border-color: var(--accent);
+        color: var(--accent-strong);
+      }
+
+      .clear-filter svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .result-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 18px 0 14px;
+      }
+
+      .result-summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .result-summary strong {
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .summary-separator {
+        width: 1px;
+        height: 14px;
+        background: var(--border);
+      }
+
+      .view-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .view-label {
+        color: var(--subtle);
+        font-size: 12px;
+      }
+
+      .segment-control {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--panel);
+      }
+
+      .segment-control button {
+        min-width: 32px;
+        height: 32px;
+        border: 0;
+        border-left: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .segment-control button:first-child {
+        border-left: 0;
+      }
+
+      .segment-control button[aria-pressed="true"] {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-weight: 800;
+      }
+
+      .asset-grid {
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 6), minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .asset-card {
+        position: relative;
+        display: grid;
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        cursor: pointer;
+      }
+
+      .asset-card:hover {
+        border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+        box-shadow: var(--shadow);
+      }
+
+      .asset-card.is-selected {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+
+      .asset-preview {
+        position: relative;
+        aspect-ratio: 1 / 0.86;
+        overflow: hidden;
+        border-bottom: 1px solid var(--border);
+        background-image: url("./assets/reference-library.png");
+        background-repeat: no-repeat;
+        background-size: 820% auto;
+      }
+
+      .asset-preview::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 26%;
+        background: rgba(14, 18, 16, 0.18);
+        content: "";
+        pointer-events: none;
+      }
+
+      .crop-0 { background-position: 0% 28%; }
+      .crop-1 { background-position: 13% 28%; }
+      .crop-2 { background-position: 27% 28%; }
+      .crop-3 { background-position: 41% 28%; }
+      .crop-4 { background-position: 55% 28%; }
+      .crop-5 { background-position: 69% 28%; }
+      .crop-6 { background-position: 83% 28%; }
+      .crop-7 { background-position: 100% 28%; }
+
+      .asset-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+        display: flex;
+        gap: 5px;
+        opacity: 0;
+        transform: translateY(-3px);
+        transition: opacity 130ms ease, transform 130ms ease;
+      }
+
+      .asset-card:hover .asset-actions,
+      .asset-card:focus-within .asset-actions {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .view-action,
+      .select-button {
+        width: 30px;
+        height: 30px;
+        border-color: rgba(255, 255, 255, 0.55);
+        background: rgba(19, 24, 22, 0.78);
+        color: #ffffff;
+      }
+
+      .view-action:hover,
+      .select-button:hover {
+        border-color: #ffffff;
+        color: #ffffff;
+      }
+
+      .select-button[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .asset-body {
+        display: grid;
+        min-width: 0;
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .asset-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        min-height: 22px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        min-height: 21px;
+        border-radius: 5px;
+        padding: 0 6px;
+        background: var(--panel-soft);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .tag.role {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .tag.tone {
+        background: var(--warm-soft);
+        color: var(--warm);
+      }
+
+      .asset-name {
+        overflow: hidden;
+        margin: 0;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 760;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .asset-detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
+        color: var(--subtle);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .asset-detail span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .empty-state {
+        display: grid;
+        min-height: 270px;
+        place-items: center;
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .empty-state svg {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 8px;
+        color: var(--subtle);
+      }
+
+      .empty-state p {
+        margin: 0;
+      }
+
+      dialog {
+        width: min(1060px, calc(100vw - 34px));
+        max-height: min(760px, calc(100vh - 34px));
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      }
+
+      dialog::backdrop {
+        background: rgba(7, 11, 9, 0.72);
+      }
+
+      .dialog-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        min-height: 560px;
+      }
+
+      .dialog-image {
+        min-height: 0;
+        background-image: url("./assets/reference-library.png");
+        background-repeat: no-repeat;
+        background-size: 700% auto;
+      }
+
+      .dialog-aside {
+        display: grid;
+        align-content: start;
+        gap: 16px;
+        border-left: 1px solid var(--border);
+        padding: 20px;
+      }
+
+      .dialog-aside h2 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .dialog-close {
+        justify-self: end;
+      }
+
+      .dialog-meta {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+      }
+
+      .dialog-meta div {
+        display: grid;
+        gap: 2px;
+      }
+
+      .dialog-meta dt {
+        color: var(--subtle);
+        font-size: 11px;
+      }
+
+      .dialog-meta dd {
+        margin: 0;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .dialog-actions button {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel-soft);
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .dialog-actions button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .dialog-actions svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      @media (max-width: 1440px) {
+        .asset-grid[data-columns="8"] {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 1160px) {
+        .topbar {
+          grid-template-columns: minmax(160px, 210px) minmax(200px, 1fr) auto;
+          gap: 14px;
+          padding: 12px 18px;
+        }
+
+        .app-body {
+          grid-template-columns: 208px minmax(0, 1fr);
+        }
+
+        .workspace {
+          padding: 24px;
+        }
+
+        .filter-toolbar {
+          grid-template-columns: repeat(3, minmax(130px, 1fr));
+        }
+
+        .asset-grid[data-columns="6"],
+        .asset-grid[data-columns="8"] {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 850px) {
+        .topbar {
+          position: relative;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px;
+        }
+
+        .brand {
+          grid-column: 1;
+          grid-row: 1;
+        }
+
+        .global-search {
+          grid-column: 1 / -1;
+          grid-row: 2;
+          width: 100%;
+        }
+
+        .header-actions {
+          grid-column: 2;
+          grid-row: 1;
+        }
+
+        .upload-button span,
+        .avatar-button {
+          display: none;
+        }
+
+        .upload-button {
+          width: 36px;
+          justify-content: center;
+          padding: 0;
+        }
+
+        .app-body {
+          display: block;
+        }
+
+        .channel-rail {
+          gap: 10px;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+          padding: 14px 18px;
+        }
+
+        .channel-heading {
+          padding: 0;
+        }
+
+        .channel-list {
+          display: flex;
+          overflow-x: auto;
+          gap: 8px;
+          padding-bottom: 2px;
+        }
+
+        .channel-item {
+          min-width: 132px;
+          flex: 0 0 132px;
+        }
+
+        .rail-note {
+          display: none;
+        }
+
+        .workspace {
+          padding: 20px 18px 34px;
+        }
+
+        .title-line {
+          display: grid;
+          gap: 12px;
+        }
+
+        .title-stats {
+          justify-content: flex-start;
+        }
+
+        .filter-toolbar {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .clear-filter {
+          grid-column: span 2;
+        }
+
+        .asset-grid[data-columns="4"],
+        .asset-grid[data-columns="6"],
+        .asset-grid[data-columns="8"] {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .dialog-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .dialog-image {
+          min-height: 330px;
+        }
+
+        .dialog-aside {
+          border-top: 1px solid var(--border);
+          border-left: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .topbar {
+          padding: 12px 14px;
+        }
+
+        .brand-kicker {
+          display: none;
+        }
+
+        .workspace {
+          padding-right: 14px;
+          padding-left: 14px;
+        }
+
+        .channel-rail {
+          padding-right: 14px;
+          padding-left: 14px;
+        }
+
+        .page-title {
+          font-size: 21px;
+        }
+
+        .filter-toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .clear-filter {
+          grid-column: auto;
+        }
+
+        .result-toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .view-controls {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .asset-grid[data-columns="4"],
+        .asset-grid[data-columns="6"],
+        .asset-grid[data-columns="8"] {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 9px;
+        }
+
+        .asset-body {
+          padding: 8px;
+        }
+
+        .asset-tags {
+          gap: 4px;
+        }
+
+        .tag:nth-child(3) {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="dark">
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="视觉资产素材库">
+          <span class="brand-mark" aria-hidden="true"><i data-lucide="images"></i></span>
+          <span class="brand-copy">
+            <span class="brand-name">视觉素材库</span>
+            <span class="brand-kicker">跨境商品视觉资产</span>
+          </span>
+        </div>
+
+        <label class="global-search" for="globalSearch">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <input id="globalSearch" type="search" placeholder="搜索文件名、SPU 或颜色" autocomplete="off" />
+        </label>
+
+        <div class="header-actions">
+          <button id="themeToggle" class="icon-button" type="button" title="切换明暗主题" aria-label="切换明暗主题">
+            <i data-lucide="sun-moon" aria-hidden="true"></i>
+          </button>
+          <button class="upload-button" type="button" title="上传图片">
+            <i data-lucide="upload" aria-hidden="true"></i><span>上传</span>
+          </button>
+          <button class="avatar-button" type="button" title="当前用户：JL" aria-label="当前用户：JL">JL</button>
+        </div>
+      </header>
+
+      <div class="app-body">
+        <aside class="channel-rail" aria-label="一级渠道导航">
+          <div class="channel-heading">
+            <div>
+              <p class="layer-label">一级</p>
+              <h2>渠道范围</h2>
+            </div>
+            <span class="section-note" id="channelScope"></span>
+          </div>
+          <nav class="channel-list" id="channelList" aria-label="渠道"></nav>
+          <div class="rail-note">
+            <p class="layer-label">当前数据</p>
+            <p>渠道是浏览入口，不复制原图。相同素材可同时关联 Amazon 与多渠道。</p>
+          </div>
+        </aside>
+
+        <main class="workspace">
+          <section class="context-header" aria-labelledby="pageTitle">
+            <div class="breadcrumb" id="breadcrumb"></div>
+            <div class="title-line">
+              <div>
+                <p class="eyebrow">当前素材组</p>
+                <h1 class="page-title" id="pageTitle">加载中</h1>
+              </div>
+              <div class="title-stats" id="titleStats"></div>
+            </div>
+          </section>
+
+          <section class="layer-section" aria-labelledby="groupHeading">
+            <div class="section-heading">
+              <div>
+                <p class="layer-label">二级 · SPU / 国家 / 图片类型</p>
+                <h2 id="groupHeading">选择素材组</h2>
+              </div>
+              <span class="section-note" id="groupCount"></span>
+            </div>
+            <div class="group-scroller" id="groupScroller"></div>
+          </section>
+
+          <section class="layer-section" aria-labelledby="filterHeading">
+            <div class="section-heading">
+              <div>
+                <p class="layer-label">三级 · 颜色</p>
+                <h2 id="filterHeading">精确筛选</h2>
+              </div>
+              <span class="section-note">“网格”只控制浏览密度，不是图片属性</span>
+            </div>
+
+            <div class="filter-toolbar">
+              <label class="field"><span>SPU</span><select id="spuFilter"></select></label>
+              <label class="field"><span>国家</span><select id="countryFilter"></select></label>
+              <label class="field"><span>图片类型</span><select id="roleFilter"></select></label>
+              <label class="field"><span>颜色</span><select id="colorFilter"></select></label>
+              <button id="clearFilters" class="clear-filter" type="button"><i data-lucide="rotate-ccw" aria-hidden="true"></i>清除筛选</button>
+            </div>
+          </section>
+
+          <section class="layer-section" aria-labelledby="resultsHeading">
+            <div class="result-toolbar">
+              <div class="result-summary" id="resultsHeading" aria-live="polite"></div>
+              <div class="view-controls">
+                <span class="view-label">网格</span>
+                <div class="segment-control" aria-label="选择网格列数">
+                  <button type="button" data-columns="4" aria-pressed="false" title="4 列网格">4</button>
+                  <button type="button" data-columns="6" aria-pressed="true" title="6 列网格">6</button>
+                  <button type="button" data-columns="8" aria-pressed="false" title="8 列网格">8</button>
+                </div>
+              </div>
+            </div>
+            <div class="asset-grid" id="assetGrid" data-columns="6"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="previewDialog" aria-labelledby="previewTitle">
+      <div class="dialog-layout">
+        <div class="dialog-image" id="dialogImage" aria-label="图片预览"></div>
+        <aside class="dialog-aside">
+          <button id="dialogClose" class="icon-button dialog-close" type="button" title="关闭预览" aria-label="关闭预览"><i data-lucide="x" aria-hidden="true"></i></button>
+          <div>
+            <p class="layer-label">素材详情</p>
+            <h2 id="previewTitle"></h2>
+          </div>
+          <dl class="dialog-meta" id="dialogMeta"></dl>
+          <div class="dialog-actions">
+            <button id="dialogSelect" type="button"><i data-lucide="check" aria-hidden="true"></i>选择</button>
+            <button class="primary" type="button"><i data-lucide="download" aria-hidden="true"></i>下载原图</button>
+          </div>
+        </aside>
+      </div>
+    </dialog>
+
+    <script>
+      const groupDefinitions = [
+        {
+          id: "amazon-0501-de-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          product: "升降桌",
+          spu: "0501 Pro",
+          country: "德国",
+          countryCode: "DE",
+          role: "主副图",
+          target: 8,
+          total: 24,
+          updated: "2 小时前",
+          skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
+          colors: ["白色", "黑色", "胡桃木色"],
+          cover: 0,
+        },
+        {
+          id: "amazon-0501-de-detail",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          product: "升降桌",
+          spu: "0501 Pro",
+          country: "德国",
+          countryCode: "DE",
+          role: "A+详情页",
+          target: 12,
+          total: 40,
+          updated: "5 小时前",
+          skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
+          colors: ["白色", "黑色", "胡桃木色"],
+          cover: 3,
+        },
+        {
+          id: "amazon-arena-uk-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          product: "电竞椅",
+          spu: "Arena Shift X",
+          country: "英国",
+          countryCode: "UK",
+          role: "主副图",
+          target: 7,
+          total: 18,
+          updated: "昨天",
+          skus: ["ASX-RD", "ASX-BK"],
+          colors: ["红黑色", "黑色"],
+          cover: 5,
+        },
+        {
+          id: "multi-outdoor-us-main",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          product: "户外",
+          spu: "Trail Frame 20",
+          country: "美国",
+          countryCode: "US",
+          role: "主副图",
+          target: 8,
+          total: 15,
+          updated: "4 天前",
+          skus: ["TF20-S", "TF20-L"],
+          colors: ["柚木色", "黑色"],
+          cover: 4,
+        },
+        {
+          id: "multi-arena-de-detail",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          product: "电竞椅",
+          spu: "Arena Shift X",
+          country: "德国",
+          countryCode: "DE",
+          role: "A+详情页",
+          target: 12,
+          total: 24,
+          updated: "6 天前",
+          skus: ["ASX-RD", "ASX-BK"],
+          colors: ["红黑色", "黑色"],
+          cover: 2,
+        },
+      ];
+
+      const channels = [
+        { id: "全部", label: "全部渠道", icon: "layers" },
+        { id: "Amazon", label: "Amazon", icon: "shopping-bag" },
+        { id: "多渠道", label: "多渠道", icon: "git-branch" },
+      ];
+
+      const dimensions = ["1600 x 1600", "1500 x 2000", "1600 x 2133", "2000 x 2000"];
+      const crops = [0, 1, 2, 3, 4, 5, 6, 7];
+      const assets = groupDefinitions.flatMap((group) =>
+        Array.from({ length: group.total }, (_, index) => {
+          const number = index + 1;
+          const sku = group.skus[index % group.skus.length];
+          const color = group.colors[index % group.colors.length];
+          const tone = index % 3 === 1 ? "暗调" : "明调";
+          const extension = index % 5 === 0 ? "WEBP" : "JPG";
+          const size = `${(480 + ((index * 83) % 1040)) / 10} KB`;
+          return {
+            id: `${group.id}-${String(number).padStart(2, "0")}`,
+            groupId: group.id,
+            channel: group.channel,
+            product: group.product,
+            spu: group.spu,
+            country: group.country,
+            countryCode: group.countryCode,
+            role: group.role,
+            sku,
+            color,
+            tone,
+            extension,
+            size,
+            dimensions: dimensions[index % dimensions.length],
+            order: number,
+            crop: crops[(index + group.cover) % crops.length],
+            filename: `${group.spu}_${group.countryCode}_${group.role}_${sku}_${String(number).padStart(2, "0")}.${extension.toLowerCase()}`,
+          };
+        })
+      );
+
+      const state = {
+        channel: "Amazon",
+        groupId: "amazon-0501-de-main",
+        spu: "全部",
+        country: "全部",
+        role: "全部",
+        color: "全部",
+        query: "",
+        columns: 6,
+        selected: new Set(),
+        theme: localStorage.getItem("asset-library-theme") || "dark",
+      };
+
+      const channelList = document.getElementById("channelList");
+      const channelScope = document.getElementById("channelScope");
+      const groupScroller = document.getElementById("groupScroller");
+      const groupCount = document.getElementById("groupCount");
+      const breadcrumb = document.getElementById("breadcrumb");
+      const pageTitle = document.getElementById("pageTitle");
+      const titleStats = document.getElementById("titleStats");
+      const assetGrid = document.getElementById("assetGrid");
+      const resultSummary = document.getElementById("resultsHeading");
+      const previewDialog = document.getElementById("previewDialog");
+      const dialogImage = document.getElementById("dialogImage");
+      const previewTitle = document.getElementById("previewTitle");
+      const dialogMeta = document.getElementById("dialogMeta");
+      const dialogSelect = document.getElementById("dialogSelect");
+      const selects = {
+        spu: document.getElementById("spuFilter"),
+        country: document.getElementById("countryFilter"),
+        role: document.getElementById("roleFilter"),
+        color: document.getElementById("colorFilter"),
+      };
+
+      function unique(values) {
+        return [...new Set(values)];
+      }
+
+      function visibleGroups() {
+        return groupDefinitions.filter((group) => {
+          const inChannel = state.channel === "全部" || group.channel === state.channel;
+          const inSpu = state.spu === "全部" || group.spu === state.spu;
+          const inCountry = state.country === "全部" || group.country === state.country;
+          const inRole = state.role === "全部" || group.role === state.role;
+          return inChannel && inSpu && inCountry && inRole;
+        });
+      }
+
+      function ensureActiveGroup(groups) {
+        if (!groups.some((group) => group.id === state.groupId)) {
+          state.groupId = groups[0]?.id || "";
+          state.color = "全部";
+        }
+      }
+
+      function activeGroup() {
+        return groupDefinitions.find((group) => group.id === state.groupId) || null;
+      }
+
+      function scopedAssets() {
+        return assets.filter((asset) => asset.groupId === state.groupId);
+      }
+
+      function filteredAssets() {
+        const query = state.query.trim().toLowerCase();
+        return scopedAssets().filter((asset) => {
+          const matchesColor = state.color === "全部" || asset.color === state.color;
+          const haystack = `${asset.filename} ${asset.spu} ${asset.sku} ${asset.color} ${asset.country} ${asset.role}`.toLowerCase();
+          return matchesColor && (!query || haystack.includes(query));
+        });
+      }
+
+      function countByChannel(channel) {
+        return channel === "全部" ? assets.length : assets.filter((asset) => asset.channel === channel).length;
+      }
+
+      function channelIcon(channel) {
+        return channels.find((item) => item.id === channel)?.icon || "folder";
+      }
+
+      function renderChannels() {
+        channelScope.textContent = `${assets.length} 张`;
+        channelList.innerHTML = channels
+          .map((channel) => {
+            const isActive = state.channel === channel.id;
+            return `<button class="channel-item" type="button" data-channel="${channel.id}" aria-current="${isActive}">
+              <span class="channel-symbol"><i data-lucide="${channel.icon}" aria-hidden="true"></i></span>
+              <span class="channel-name">${channel.label}</span>
+              <span class="channel-count">${countByChannel(channel.id)}</span>
+            </button>`;
+          })
+          .join("");
+      }
+
+      function renderGroupCards(groups) {
+        groupCount.textContent = `${groups.length} 个素材组`;
+        if (!groups.length) {
+          groupScroller.innerHTML = `<div class="empty-state"><div><i data-lucide="folder-x" aria-hidden="true"></i><p>当前组合没有匹配的素材组</p></div></div>`;
+          return;
+        }
+        groupScroller.innerHTML = groups
+          .map((group) => {
+            const active = group.id === state.groupId;
+            const slots = group.role === "主副图" ? `主副图 ${Math.min(group.target, group.total)}/${group.target}` : `${group.target} 个版位`;
+            return `<button class="group-card" type="button" data-group-id="${group.id}" aria-current="${active}">
+              <span class="group-cover cover-${group.cover}" aria-hidden="true"></span>
+              <span class="group-copy">
+                <span class="group-name">${group.product} · ${group.spu}</span>
+                <span class="group-meta">${group.countryCode} · ${group.role}</span>
+                <span class="group-count"><strong>${group.total}</strong> 张 · ${slots}</span>
+              </span>
+            </button>`;
+          })
+          .join("");
+      }
+
+      function optionMarkup(label, values, selected) {
+        return [`<option value="全部">全部${label}</option>`]
+          .concat(values.map((value) => `<option value="${value}">${value}</option>`))
+          .map((option) => option.replace(`value="${selected}"`, `value="${selected}" selected`))
+          .join("");
+      }
+
+      function renderSelects(groups, group) {
+        const allSpus = unique(groupDefinitions.map((item) => item.spu));
+        const allCountries = unique(groupDefinitions.map((item) => item.country));
+        const allRoles = unique(groupDefinitions.map((item) => item.role));
+        selects.spu.innerHTML = optionMarkup("SPU", allSpus, state.spu);
+        selects.country.innerHTML = optionMarkup("国家", allCountries, state.country);
+        selects.role.innerHTML = optionMarkup("图片类型", allRoles, state.role);
+
+        const colors = group ? group.colors : [];
+        if (!colors.includes(state.color)) state.color = "全部";
+        selects.color.innerHTML = optionMarkup("颜色", colors, state.color);
+      }
+
+      function renderContext(group, filtered) {
+        if (!group) {
+          breadcrumb.innerHTML = `<span>素材库</span><i data-lucide="chevron-right" aria-hidden="true"></i><strong>无结果</strong>`;
+          pageTitle.textContent = "没有匹配的素材组";
+          titleStats.innerHTML = "";
+          return;
+        }
+        const crumbParts = ["素材库", group.channelLabel, group.spu, group.country, group.role];
+        breadcrumb.innerHTML = crumbParts
+          .map((part, index) => `${index ? '<i data-lucide="chevron-right" aria-hidden="true"></i>' : ""}<strong>${part}</strong>`)
+          .join("");
+        pageTitle.textContent = `${group.product} · ${group.spu} · ${group.country} · ${group.role}`;
+        const mainSlots = group.role === "主副图" ? `主副图 ${Math.min(group.target, group.total)}/${group.target}` : `${group.target} 个版位`;
+        titleStats.innerHTML = `
+          <span class="stat-pill"><strong>${group.total}</strong>总张数</span>
+          <span class="stat-pill"><strong>${group.colors.length}</strong>种颜色</span>
+          <span class="stat-pill">${mainSlots}</span>
+          <span class="stat-pill">更新于 ${group.updated}</span>`;
+      }
+
+      function assetCard(asset) {
+        const selected = state.selected.has(asset.id);
+        return `<article class="asset-card ${selected ? "is-selected" : ""}" data-asset-id="${asset.id}" tabindex="0">
+          <div class="asset-preview crop-${asset.crop}">
+            <div class="asset-actions">
+              <button class="view-action" type="button" data-action="preview" title="预览 ${asset.filename}" aria-label="预览 ${asset.filename}"><i data-lucide="expand" aria-hidden="true"></i></button>
+              <button class="select-button" type="button" data-action="select" aria-pressed="${selected}" title="${selected ? "取消选择" : "选择图片"}" aria-label="${selected ? "取消选择" : "选择图片"}"><i data-lucide="check" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div class="asset-body">
+            <div class="asset-tags">
+              <span class="tag">${asset.countryCode}</span>
+              <span class="tag role">${asset.role} ${String(asset.order).padStart(2, "0")}</span>
+              <span class="tag tone">${asset.tone}</span>
+            </div>
+            <p class="asset-name">${asset.color} · ${asset.sku}</p>
+            <div class="asset-detail"><span>${asset.dimensions}</span><span>${asset.size}</span></div>
+          </div>
+        </article>`;
+      }
+
+      function renderGrid(filtered) {
+        assetGrid.dataset.columns = String(state.columns);
+        if (!filtered.length) {
+          assetGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1"><div><i data-lucide="search-x" aria-hidden="true"></i><p>没有符合条件的图片</p></div></div>`;
+          return;
+        }
+        assetGrid.innerHTML = filtered.map(assetCard).join("");
+      }
+
+      function renderSummary(group, filtered) {
+        const groupTotal = group?.total || 0;
+        resultSummary.innerHTML = `
+          <span><strong>${groupTotal}</strong> 张素材组总数</span>
+          <span class="summary-separator" aria-hidden="true"></span>
+          <span>筛选 <strong>${filtered.length}</strong> 张</span>
+          <span class="summary-separator" aria-hidden="true"></span>
+          <span>已选 <strong>${state.selected.size}</strong> 张</span>`;
+      }
+
+      function syncColumnControls() {
+        document.querySelectorAll("[data-columns]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(Number(button.dataset.columns) === state.columns));
+        });
+      }
+
+      function render() {
+        const groups = visibleGroups();
+        ensureActiveGroup(groups);
+        const group = activeGroup();
+        const filtered = filteredAssets();
+        renderChannels();
+        renderGroupCards(groups);
+        renderSelects(groups, group);
+        renderContext(group, filtered);
+        renderSummary(group, filtered);
+        renderGrid(filtered);
+        syncColumnControls();
+        document.body.dataset.theme = state.theme;
+        localStorage.setItem("asset-library-theme", state.theme);
+        window.lucide?.createIcons();
+      }
+
+      function selectAsset(id) {
+        if (state.selected.has(id)) state.selected.delete(id);
+        else state.selected.add(id);
+        render();
+      }
+
+      function openPreview(id) {
+        const asset = assets.find((item) => item.id === id);
+        if (!asset) return;
+        dialogImage.className = `dialog-image crop-${asset.crop}`;
+        previewTitle.textContent = `${asset.color} · ${asset.role} ${String(asset.order).padStart(2, "0")}`;
+        dialogMeta.innerHTML = `
+          <div><dt>SPU</dt><dd>${asset.product} · ${asset.spu}</dd></div>
+          <div><dt>投放范围</dt><dd>${asset.channel} · ${asset.country} · ${asset.role}</dd></div>
+          <div><dt>颜色 / 光调</dt><dd>${asset.color} · ${asset.tone}</dd></div>
+          <div><dt>规格</dt><dd>${asset.dimensions} · ${asset.extension} · ${asset.size}</dd></div>
+          <div><dt>文件名</dt><dd>${asset.filename}</dd></div>`;
+        dialogSelect.dataset.assetId = asset.id;
+        dialogSelect.innerHTML = state.selected.has(asset.id)
+          ? '<i data-lucide="minus" aria-hidden="true"></i>取消选择'
+          : '<i data-lucide="check" aria-hidden="true"></i>选择';
+        previewDialog.showModal();
+        window.lucide?.createIcons();
+      }
+
+      channelList.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-channel]");
+        if (!button) return;
+        state.channel = button.dataset.channel;
+        state.spu = "全部";
+        state.country = "全部";
+        state.role = "全部";
+        state.color = "全部";
+        state.groupId = visibleGroups()[0]?.id || "";
+        render();
+      });
+
+      groupScroller.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-group-id]");
+        if (!card) return;
+        state.groupId = card.dataset.groupId;
+        state.color = "全部";
+        render();
+      });
+
+      assetGrid.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-asset-id]");
+        if (!card) return;
+        const action = event.target.closest("[data-action]")?.dataset.action;
+        if (action === "select") {
+          selectAsset(card.dataset.assetId);
+          return;
+        }
+        openPreview(card.dataset.assetId);
+      });
+
+      assetGrid.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const card = event.target.closest("[data-asset-id]");
+        if (!card) return;
+        event.preventDefault();
+        openPreview(card.dataset.assetId);
+      });
+
+      Object.entries(selects).forEach(([key, element]) => {
+        element.addEventListener("change", () => {
+          state[key] = element.value;
+          if (["spu", "country", "role"].includes(key)) state.groupId = visibleGroups()[0]?.id || "";
+          if (["spu", "country", "role"].includes(key)) {
+            state.color = "全部";
+          }
+          render();
+        });
+      });
+
+      document.getElementById("globalSearch").addEventListener("input", (event) => {
+        state.query = event.target.value;
+        render();
+      });
+
+      document.getElementById("clearFilters").addEventListener("click", () => {
+        state.spu = "全部";
+        state.country = "全部";
+        state.role = "全部";
+        state.color = "全部";
+        state.query = "";
+        document.getElementById("globalSearch").value = "";
+        state.groupId = visibleGroups()[0]?.id || "";
+        render();
+      });
+
+      document.querySelector(".segment-control").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-columns]");
+        if (!button) return;
+        state.columns = Number(button.dataset.columns);
+        render();
+      });
+
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        state.theme = state.theme === "dark" ? "light" : "dark";
+        render();
+      });
+
+      document.getElementById("dialogClose").addEventListener("click", () => previewDialog.close());
+      dialogSelect.addEventListener("click", () => {
+        selectAsset(dialogSelect.dataset.assetId);
+        openPreview(dialogSelect.dataset.assetId);
+      });
+
+      previewDialog.addEventListener("click", (event) => {
+        if (event.target === previewDialog) previewDialog.close();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

@@ -9,41 +9,54 @@
     />
     <title>素材库 · 视觉资产浏览</title>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
       :root {
         color-scheme: light;
-        --canvas: #f3f5f3;
-        --panel: #ffffff;
-        --panel-soft: #edf1ee;
-        --panel-strong: #e6ebe7;
-        --text: #1a2420;
-        --muted: #647069;
-        --subtle: #8a958f;
-        --border: #d8dfda;
-        --accent: #18776b;
-        --accent-strong: #105b53;
-        --accent-soft: #dceee8;
-        --warm: #c96e38;
-        --warm-soft: #fae4d6;
-        --shadow: 0 8px 24px rgba(33, 49, 41, 0.08);
+        --canvas: #eef4f0;
+        --panel: rgba(255, 255, 255, 0.72);
+        --panel-soft: rgba(237, 244, 239, 0.66);
+        --panel-strong: rgba(255, 255, 255, 0.86);
+        --text: #17231f;
+        --muted: #5f6f67;
+        --subtle: #87978f;
+        --border: rgba(109, 132, 121, 0.22);
+        --accent: #13806f;
+        --accent-strong: #0b6659;
+        --accent-soft: rgba(192, 232, 220, 0.72);
+        --warm: #c36a33;
+        --warm-soft: rgba(253, 226, 211, 0.78);
+        --glass: rgba(255, 255, 255, 0.54);
+        --glass-strong: rgba(255, 255, 255, 0.78);
+        --field-a: rgba(95, 205, 176, 0.28);
+        --field-b: rgba(112, 159, 222, 0.18);
+        --field-c: rgba(241, 166, 111, 0.16);
+        --shadow: 0 18px 50px rgba(34, 54, 45, 0.13);
+        --shadow-soft: 0 10px 28px rgba(28, 44, 38, 0.09);
       }
 
       [data-theme="dark"] {
         color-scheme: dark;
-        --canvas: #111614;
-        --panel: #171d1a;
-        --panel-soft: #202824;
-        --panel-strong: #28312d;
-        --text: #f0f4f1;
-        --muted: #aab6ae;
-        --subtle: #7f8d85;
-        --border: #303a35;
+        --canvas: #0f1516;
+        --panel: rgba(20, 29, 29, 0.68);
+        --panel-soft: rgba(29, 41, 40, 0.62);
+        --panel-strong: rgba(29, 39, 38, 0.86);
+        --text: #f1f6f2;
+        --muted: #adbbb4;
+        --subtle: #81928a;
+        --border: rgba(177, 207, 194, 0.16);
         --accent: #80c8b0;
         --accent-strong: #b1e3d0;
-        --accent-soft: #1f3930;
+        --accent-soft: rgba(33, 70, 59, 0.72);
         --warm: #f2a36d;
-        --warm-soft: #3a2a21;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+        --warm-soft: rgba(73, 45, 31, 0.78);
+        --glass: rgba(18, 27, 27, 0.5);
+        --glass-strong: rgba(23, 34, 34, 0.78);
+        --field-a: rgba(83, 199, 168, 0.19);
+        --field-b: rgba(79, 128, 193, 0.18);
+        --field-c: rgba(227, 128, 86, 0.12);
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+        --shadow-soft: 0 14px 38px rgba(0, 0, 0, 0.24);
       }
 
       * {
@@ -55,14 +68,33 @@
       }
 
       body {
+        position: relative;
+        isolation: isolate;
         min-width: 320px;
         margin: 0;
-        background: var(--canvas);
+        background:
+          radial-gradient(1100px 680px at 16% -8%, var(--field-a), transparent 62%),
+          radial-gradient(900px 620px at 88% 4%, var(--field-b), transparent 60%),
+          radial-gradient(980px 700px at 72% 112%, var(--field-c), transparent 65%),
+          linear-gradient(140deg, color-mix(in srgb, var(--canvas) 94%, #ffffff), var(--canvas));
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
         font-size: 14px;
         line-height: 1.45;
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background:
+          linear-gradient(115deg, transparent 0 18%, color-mix(in srgb, var(--field-a) 48%, transparent) 42%, transparent 68%),
+          linear-gradient(28deg, transparent 0 36%, color-mix(in srgb, var(--field-b) 45%, transparent) 58%, transparent 84%);
+        content: "";
+        filter: blur(34px);
+        opacity: 0.78;
+        pointer-events: none;
       }
 
       button,
@@ -83,6 +115,8 @@
       }
 
       .app-shell {
+        position: relative;
+        z-index: 1;
         min-height: 100vh;
       }
 
@@ -97,8 +131,9 @@
         gap: 24px;
         padding: 12px 24px;
         border-bottom: 1px solid var(--border);
-        background: color-mix(in srgb, var(--canvas) 94%, transparent);
-        backdrop-filter: blur(14px);
+        background: color-mix(in srgb, var(--glass-strong) 82%, transparent);
+        backdrop-filter: blur(26px) saturate(145%);
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22), var(--shadow-soft);
       }
 
       .brand {
@@ -115,8 +150,9 @@
         place-items: center;
         border: 1px solid var(--accent);
         border-radius: 7px;
-        background: var(--accent-soft);
+        background: linear-gradient(145deg, var(--accent-soft), color-mix(in srgb, var(--panel) 72%, transparent));
         color: var(--accent-strong);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
       }
 
       .brand-mark svg {
@@ -154,8 +190,10 @@
         padding: 0 12px;
         border: 1px solid var(--border);
         border-radius: 7px;
-        background: var(--panel);
+        background: var(--glass-strong);
         color: var(--muted);
+        backdrop-filter: blur(18px) saturate(130%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), var(--shadow-soft);
       }
 
       .global-search:focus-within {
@@ -197,9 +235,10 @@
         place-items: center;
         border: 1px solid var(--border);
         border-radius: 7px;
-        background: var(--panel);
+        background: var(--glass-strong);
         color: var(--text);
         cursor: pointer;
+        backdrop-filter: blur(14px);
       }
 
       .icon-button:hover,
@@ -225,10 +264,11 @@
         border: 1px solid var(--accent);
         border-radius: 7px;
         padding: 0 12px;
-        background: var(--accent);
+        background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-strong) 82%, #4fb299));
         color: #ffffff;
         font-weight: 750;
         cursor: pointer;
+        box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 24%, transparent);
       }
 
       .upload-button:hover {
@@ -260,6 +300,8 @@
         gap: 18px;
         border-right: 1px solid var(--border);
         padding: 24px 16px;
+        background: color-mix(in srgb, var(--glass) 78%, transparent);
+        backdrop-filter: blur(24px) saturate(135%);
       }
 
       .channel-heading {
@@ -302,8 +344,9 @@
 
       .channel-item[aria-current="true"] {
         border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
-        background: var(--accent-soft);
+        background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--glass-strong) 72%, transparent));
         color: var(--accent-strong);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), var(--shadow-soft);
       }
 
       .channel-symbol {
@@ -313,7 +356,7 @@
         place-items: center;
         border: 1px solid var(--border);
         border-radius: 6px;
-        background: var(--panel);
+        background: var(--glass-strong);
         color: var(--subtle);
       }
 
@@ -411,11 +454,12 @@
         border: 1px solid var(--border);
         border-radius: 6px;
         padding: 0 9px;
-        background: var(--panel);
+        background: var(--glass-strong);
         color: var(--muted);
         font-size: 12px;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+        backdrop-filter: blur(14px);
       }
 
       .stat-pill strong {
@@ -447,9 +491,9 @@
 
       .group-scroller {
         display: grid;
-        grid-auto-columns: minmax(255px, 300px);
+        grid-auto-columns: minmax(150px, 176px);
         grid-auto-flow: column;
-        gap: 10px;
+        gap: 8px;
         overflow-x: auto;
         padding-bottom: 4px;
         scrollbar-width: thin;
@@ -457,17 +501,18 @@
 
       .group-card {
         display: grid;
-        grid-template-columns: 70px minmax(0, 1fr);
-        align-items: center;
-        min-height: 104px;
-        gap: 12px;
+        align-items: stretch;
+        min-height: 76px;
+        gap: 6px;
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 10px;
-        background: var(--panel);
+        padding: 11px 12px;
+        background: var(--glass);
         color: var(--text);
         text-align: left;
         cursor: pointer;
+        backdrop-filter: blur(18px) saturate(130%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
       }
 
       .group-card:hover {
@@ -477,27 +522,9 @@
 
       .group-card[aria-current="true"] {
         border-color: var(--accent);
-        box-shadow: inset 0 0 0 1px var(--accent);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 72%, transparent), var(--glass-strong));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent), var(--shadow-soft);
       }
-
-      .group-cover {
-        width: 70px;
-        height: 82px;
-        overflow: hidden;
-        border-radius: 6px;
-        border: 1px solid var(--border);
-        background-image: url("./assets/reference-library.png");
-        background-repeat: no-repeat;
-        background-size: 940% auto;
-      }
-
-      .cover-0 { background-position: 0% 28%; }
-      .cover-1 { background-position: 15% 28%; }
-      .cover-2 { background-position: 31% 28%; }
-      .cover-3 { background-position: 45% 28%; }
-      .cover-4 { background-position: 60% 28%; }
-      .cover-5 { background-position: 74% 28%; }
-      .cover-6 { background-position: 88% 28%; }
 
       .group-copy {
         min-width: 0;
@@ -506,7 +533,7 @@
       .group-name {
         overflow: hidden;
         margin: 0;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 780;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -514,9 +541,15 @@
 
       .group-meta,
       .group-count {
-        margin: 4px 0 0;
+        display: block;
+        margin: 3px 0 0;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
+        line-height: 1.36;
+      }
+
+      .group-meta {
+        white-space: normal;
       }
 
       .group-count strong {
@@ -526,9 +559,13 @@
 
       .filter-toolbar {
         display: grid;
-        grid-template-columns: repeat(4, minmax(132px, 1fr)) auto;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
         align-items: end;
+      }
+
+      .filter-search-field {
+        grid-column: span 2;
       }
 
       .field {
@@ -543,15 +580,24 @@
         font-weight: 700;
       }
 
+      .field input,
       .field select {
         width: 100%;
         height: 37px;
         border: 1px solid var(--border);
         border-radius: 6px;
-        padding: 0 28px 0 10px;
-        background: var(--panel);
+        padding: 0 12px;
+        background: var(--glass-strong);
         color: var(--text);
-        cursor: pointer;
+        backdrop-filter: blur(14px);
+      }
+
+      .field input::placeholder {
+        color: var(--subtle);
+      }
+
+      .field select {
+        appearance: auto;
       }
 
       .clear-filter {
@@ -563,10 +609,11 @@
         border: 1px solid var(--border);
         border-radius: 6px;
         padding: 0 11px;
-        background: transparent;
+        background: var(--glass);
         color: var(--muted);
         cursor: pointer;
         white-space: nowrap;
+        backdrop-filter: blur(14px);
       }
 
       .clear-filter:hover {
@@ -613,6 +660,37 @@
         gap: 8px;
       }
 
+      .download-filtered {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 0 10px;
+        background: var(--glass-strong);
+        color: var(--text);
+        cursor: pointer;
+        white-space: nowrap;
+        backdrop-filter: blur(14px);
+      }
+
+      .download-filtered:hover {
+        border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+        color: var(--accent-strong);
+      }
+
+      .download-filtered:disabled {
+        cursor: not-allowed;
+        opacity: 0.48;
+      }
+
+      .download-filtered svg {
+        width: 15px;
+        height: 15px;
+      }
+
       .view-label {
         color: var(--subtle);
         font-size: 12px;
@@ -623,7 +701,8 @@
         overflow: hidden;
         border: 1px solid var(--border);
         border-radius: 7px;
-        background: var(--panel);
+        background: var(--glass-strong);
+        backdrop-filter: blur(14px);
       }
 
       .segment-control button {
@@ -659,8 +738,10 @@
         overflow: hidden;
         border: 1px solid var(--border);
         border-radius: 8px;
-        background: var(--panel);
+        background: var(--glass);
         cursor: pointer;
+        backdrop-filter: blur(18px) saturate(128%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
       }
 
       .asset-card:hover {
@@ -670,7 +751,7 @@
 
       .asset-card.is-selected {
         border-color: var(--accent);
-        box-shadow: inset 0 0 0 1px var(--accent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 76%, transparent), var(--shadow-soft);
       }
 
       .asset-preview {
@@ -814,6 +895,8 @@
         border-radius: 8px;
         color: var(--muted);
         text-align: center;
+        background: color-mix(in srgb, var(--glass) 72%, transparent);
+        backdrop-filter: blur(18px);
       }
 
       .empty-state svg {
@@ -834,8 +917,9 @@
         border: 1px solid var(--border);
         border-radius: 8px;
         padding: 0;
-        background: var(--panel);
+        background: var(--glass-strong);
         color: var(--text);
+        backdrop-filter: blur(24px) saturate(130%);
         box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
       }
 
@@ -925,12 +1009,6 @@
         height: 15px;
       }
 
-      @media (max-width: 1440px) {
-        .asset-grid[data-columns="8"] {
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-        }
-      }
-
       @media (max-width: 1160px) {
         .topbar {
           grid-template-columns: minmax(160px, 210px) minmax(200px, 1fr) auto;
@@ -947,12 +1025,7 @@
         }
 
         .filter-toolbar {
-          grid-template-columns: repeat(3, minmax(130px, 1fr));
-        }
-
-        .asset-grid[data-columns="6"],
-        .asset-grid[data-columns="8"] {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
       }
 
@@ -1038,14 +1111,8 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .clear-filter {
-          grid-column: span 2;
-        }
-
-        .asset-grid[data-columns="4"],
-        .asset-grid[data-columns="6"],
-        .asset-grid[data-columns="8"] {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+        .filter-search-field {
+          grid-column: 1 / -1;
         }
 
         .dialog-layout {
@@ -1089,6 +1156,10 @@
           grid-template-columns: 1fr;
         }
 
+        .filter-search-field {
+          grid-column: auto;
+        }
+
         .clear-filter {
           grid-column: auto;
         }
@@ -1103,10 +1174,7 @@
           justify-content: space-between;
         }
 
-        .asset-grid[data-columns="4"],
-        .asset-grid[data-columns="6"],
-        .asset-grid[data-columns="8"] {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+        .asset-grid {
           gap: 9px;
         }
 
@@ -1137,16 +1205,17 @@
 
         <label class="global-search" for="globalSearch">
           <i data-lucide="search" aria-hidden="true"></i>
-          <input id="globalSearch" type="search" placeholder="搜索文件名、SPU 或颜色" autocomplete="off" />
+          <input id="globalSearch" type="search" placeholder="搜索文件名、SPU、品类或模糊关键词" autocomplete="off" />
         </label>
 
         <div class="header-actions">
           <button id="themeToggle" class="icon-button" type="button" title="切换明暗主题" aria-label="切换明暗主题">
             <i data-lucide="sun-moon" aria-hidden="true"></i>
           </button>
-          <button class="upload-button" type="button" title="上传图片">
+          <button id="uploadButton" class="upload-button" type="button" title="上传图片">
             <i data-lucide="upload" aria-hidden="true"></i><span>上传</span>
           </button>
+          <input id="uploadInput" type="file" accept="image/*" multiple hidden />
           <button class="avatar-button" type="button" title="当前用户：JL" aria-label="当前用户：JL">JL</button>
         </div>
       </header>
@@ -1155,7 +1224,6 @@
         <aside class="channel-rail" aria-label="一级渠道导航">
           <div class="channel-heading">
             <div>
-              <p class="layer-label">一级</p>
               <h2>渠道范围</h2>
             </div>
             <span class="section-note" id="channelScope"></span>
@@ -1182,8 +1250,8 @@
           <section class="layer-section" aria-labelledby="groupHeading">
             <div class="section-heading">
               <div>
-                <p class="layer-label">二级 · SPU / 国家 / 图片类型</p>
-                <h2 id="groupHeading">选择素材组</h2>
+                <p class="layer-label">二级·品类</p>
+                <h2 id="groupHeading">选择品类</h2>
               </div>
               <span class="section-note" id="groupCount"></span>
             </div>
@@ -1193,17 +1261,17 @@
           <section class="layer-section" aria-labelledby="filterHeading">
             <div class="section-heading">
               <div>
-                <p class="layer-label">三级 · 颜色</p>
+                <p class="layer-label">三级·精确筛选</p>
                 <h2 id="filterHeading">精确筛选</h2>
               </div>
-              <span class="section-note">“网格”只控制浏览密度，不是图片属性</span>
+              <span class="section-note">“布局”只控制浏览密度，不是图片属性</span>
             </div>
 
             <div class="filter-toolbar">
-              <label class="field"><span>SPU</span><select id="spuFilter"></select></label>
               <label class="field"><span>国家</span><select id="countryFilter"></select></label>
               <label class="field"><span>图片类型</span><select id="roleFilter"></select></label>
               <label class="field"><span>颜色</span><select id="colorFilter"></select></label>
+              <label class="field filter-search-field"><span>文本搜索</span><input id="filterSearch" type="search" placeholder="搜索SPU文件名" autocomplete="off" /></label>
               <button id="clearFilters" class="clear-filter" type="button"><i data-lucide="rotate-ccw" aria-hidden="true"></i>清除筛选</button>
             </div>
           </section>
@@ -1212,11 +1280,14 @@
             <div class="result-toolbar">
               <div class="result-summary" id="resultsHeading" aria-live="polite"></div>
               <div class="view-controls">
-                <span class="view-label">网格</span>
-                <div class="segment-control" aria-label="选择网格列数">
-                  <button type="button" data-columns="4" aria-pressed="false" title="4 列网格">4</button>
-                  <button type="button" data-columns="6" aria-pressed="true" title="6 列网格">6</button>
-                  <button type="button" data-columns="8" aria-pressed="false" title="8 列网格">8</button>
+                <button id="downloadFiltered" class="download-filtered" type="button" title="下载当前筛选结果">
+                  <i data-lucide="download" aria-hidden="true"></i><span>下载筛选结果</span>
+                </button>
+                <span class="view-label">布局</span>
+                <div class="segment-control" aria-label="选择布局列数">
+                  <button type="button" data-columns="4" aria-pressed="false" title="4 列布局">4</button>
+                  <button type="button" data-columns="6" aria-pressed="true" title="6 列布局">6</button>
+                  <button type="button" data-columns="8" aria-pressed="false" title="8 列布局">8</button>
                 </div>
               </div>
             </div>
@@ -1245,11 +1316,24 @@
     </dialog>
 
     <script>
+      const uploadTimeStorageKey = "asset-library-upload-times";
+      let uploadTimeOverrides = {};
+      try {
+        uploadTimeOverrides = JSON.parse(localStorage.getItem(uploadTimeStorageKey) || "{}") || {};
+      } catch {
+        uploadTimeOverrides = {};
+      }
+
+      function uploadTimeAgo(milliseconds) {
+        return new Date(Date.now() - milliseconds).toISOString();
+      }
+
       const groupDefinitions = [
         {
           id: "amazon-0501-de-main",
           channel: "Amazon",
           channelLabel: "Amazon",
+          category: "桌类",
           product: "升降桌",
           spu: "0501 Pro",
           country: "德国",
@@ -1257,7 +1341,7 @@
           role: "主副图",
           target: 8,
           total: 24,
-          updated: "2 小时前",
+          uploadedAt: uploadTimeAgo(2 * 60 * 60 * 1000),
           skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
           colors: ["白色", "黑色", "胡桃木色"],
           cover: 0,
@@ -1266,6 +1350,7 @@
           id: "amazon-0501-de-detail",
           channel: "Amazon",
           channelLabel: "Amazon",
+          category: "桌类",
           product: "升降桌",
           spu: "0501 Pro",
           country: "德国",
@@ -1273,15 +1358,118 @@
           role: "A+详情页",
           target: 12,
           total: 40,
-          updated: "5 小时前",
+          uploadedAt: uploadTimeAgo(5 * 60 * 60 * 1000),
           skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
           colors: ["白色", "黑色", "胡桃木色"],
           cover: 3,
         },
         {
-          id: "amazon-arena-uk-main",
+          id: "amazon-0501-de-brand",
           channel: "Amazon",
           channelLabel: "Amazon",
+          category: "桌类",
+          product: "升降桌",
+          spu: "0501 Pro",
+          country: "德国",
+          countryCode: "DE",
+          role: "品牌营销",
+          target: 6,
+          total: 12,
+          uploadedAt: uploadTimeAgo(42 * 60 * 1000),
+          skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
+          colors: ["白色", "黑色", "胡桃木色"],
+          cover: 6,
+        },
+        {
+          id: "amazon-board-de-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "板式",
+          product: "板式家具",
+          spu: "Cabinet Loft",
+          country: "德国",
+          countryCode: "DE",
+          role: "主副图",
+          target: 8,
+          total: 16,
+          uploadedAt: uploadTimeAgo(3 * 60 * 60 * 1000),
+          skus: ["CL-WH-80", "CL-OAK-100"],
+          colors: ["白色", "橡木色"],
+          cover: 2,
+        },
+        {
+          id: "amazon-outdoor-uk-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "户外",
+          product: "户外",
+          spu: "Garden Set Pro",
+          country: "英国",
+          countryCode: "UK",
+          role: "主副图",
+          target: 8,
+          total: 14,
+          uploadedAt: uploadTimeAgo(7 * 60 * 60 * 1000),
+          skus: ["GSP-BK", "GSP-WD"],
+          colors: ["黑色", "柚木色"],
+          cover: 4,
+        },
+        {
+          id: "amazon-trampoline-us-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "蹦床",
+          product: "蹦床",
+          spu: "JumpAir 12",
+          country: "美国",
+          countryCode: "US",
+          role: "主副图",
+          target: 7,
+          total: 12,
+          uploadedAt: uploadTimeAgo(11 * 60 * 60 * 1000),
+          skus: ["JA12-BL", "JA12-GR"],
+          colors: ["蓝色", "绿色"],
+          cover: 1,
+        },
+        {
+          id: "amazon-sofa-de-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "沙发",
+          product: "沙发",
+          spu: "Cloud Rest",
+          country: "德国",
+          countryCode: "DE",
+          role: "主副图",
+          target: 7,
+          total: 10,
+          uploadedAt: uploadTimeAgo(15 * 60 * 1000),
+          skus: ["CR-GY-2S", "CR-BG-3S"],
+          colors: ["灰色", "米色"],
+          cover: 5,
+        },
+        {
+          id: "amazon-pet-uk-detail",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "宠物",
+          product: "宠物",
+          spu: "Cozy Paw",
+          country: "英国",
+          countryCode: "UK",
+          role: "A+详情页",
+          target: 10,
+          total: 12,
+          uploadedAt: uploadTimeAgo(30 * 60 * 1000),
+          skus: ["CP-WH", "CP-GR"],
+          colors: ["白色", "灰色"],
+          cover: 6,
+        },
+        {
+          id: "amazon-gaming-uk-main",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "电竞椅",
           product: "电竞椅",
           spu: "Arena Shift X",
           country: "英国",
@@ -1289,31 +1477,118 @@
           role: "主副图",
           target: 7,
           total: 18,
-          updated: "昨天",
+          uploadedAt: uploadTimeAgo(24 * 60 * 60 * 1000),
           skus: ["ASX-RD", "ASX-BK"],
           colors: ["红黑色", "黑色"],
           cover: 5,
         },
         {
-          id: "multi-outdoor-us-main",
+          id: "amazon-arena-uk-other",
+          channel: "Amazon",
+          channelLabel: "Amazon",
+          category: "电竞椅",
+          product: "电竞椅",
+          spu: "Arena Shift X",
+          country: "英国",
+          countryCode: "UK",
+          role: "其他",
+          target: 4,
+          total: 8,
+          uploadedAt: uploadTimeAgo(26 * 60 * 60 * 1000),
+          skus: ["ASX-RD", "ASX-BK"],
+          colors: ["红黑色", "黑色"],
+          cover: 1,
+        },
+        {
+          id: "multi-table-de-main",
           channel: "多渠道",
           channelLabel: "多渠道",
-          product: "户外",
-          spu: "Trail Frame 20",
+          category: "桌类",
+          product: "升降桌",
+          spu: "0501 Pro",
+          country: "德国",
+          countryCode: "DE",
+          role: "主副图",
+          target: 8,
+          total: 18,
+          uploadedAt: uploadTimeAgo(8 * 60 * 60 * 1000),
+          skus: ["0501-WH-120", "0501-WH-140", "0501-BK-140"],
+          colors: ["白色", "黑色", "胡桃木色"],
+          cover: 0,
+        },
+        {
+          id: "multi-board-de-detail",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          category: "板式",
+          product: "板式家具",
+          spu: "Cabinet Loft",
+          country: "德国",
+          countryCode: "DE",
+          role: "A+详情页",
+          target: 10,
+          total: 14,
+          uploadedAt: uploadTimeAgo(18 * 60 * 60 * 1000),
+          skus: ["CL-WH-80", "CL-OAK-100"],
+          colors: ["白色", "橡木色"],
+          cover: 2,
+        },
+        {
+          id: "multi-trampoline-us-main",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          category: "蹦床",
+          product: "蹦床",
+          spu: "JumpAir 12",
           country: "美国",
           countryCode: "US",
           role: "主副图",
-          target: 8,
-          total: 15,
-          updated: "4 天前",
-          skus: ["TF20-S", "TF20-L"],
-          colors: ["柚木色", "黑色"],
-          cover: 4,
+          target: 7,
+          total: 11,
+          uploadedAt: uploadTimeAgo(2 * 24 * 60 * 60 * 1000),
+          skus: ["JA12-BL", "JA12-GR"],
+          colors: ["蓝色", "绿色"],
+          cover: 1,
         },
         {
-          id: "multi-arena-de-detail",
+          id: "multi-sofa-de-brand",
           channel: "多渠道",
           channelLabel: "多渠道",
+          category: "沙发",
+          product: "沙发",
+          spu: "Cloud Rest",
+          country: "德国",
+          countryCode: "DE",
+          role: "品牌营销",
+          target: 6,
+          total: 9,
+          uploadedAt: uploadTimeAgo(3 * 24 * 60 * 60 * 1000),
+          skus: ["CR-GY-2S", "CR-BG-3S"],
+          colors: ["灰色", "米色"],
+          cover: 5,
+        },
+        {
+          id: "multi-pet-de-main",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          category: "宠物",
+          product: "宠物",
+          spu: "Cozy Paw",
+          country: "德国",
+          countryCode: "DE",
+          role: "主副图",
+          target: 8,
+          total: 13,
+          uploadedAt: uploadTimeAgo(9 * 60 * 60 * 1000),
+          skus: ["CP-WH", "CP-GR"],
+          colors: ["白色", "灰色"],
+          cover: 6,
+        },
+        {
+          id: "multi-gaming-de-detail",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          category: "电竞椅",
           product: "电竞椅",
           spu: "Arena Shift X",
           country: "德国",
@@ -1321,11 +1596,38 @@
           role: "A+详情页",
           target: 12,
           total: 24,
-          updated: "6 天前",
+          uploadedAt: uploadTimeAgo(6 * 24 * 60 * 60 * 1000),
           skus: ["ASX-RD", "ASX-BK"],
           colors: ["红黑色", "黑色"],
           cover: 2,
         },
+        {
+          id: "multi-outdoor-us-main",
+          channel: "多渠道",
+          channelLabel: "多渠道",
+          category: "户外",
+          product: "户外",
+          spu: "Trail Frame 20",
+          country: "美国",
+          countryCode: "US",
+          role: "主副图",
+          target: 8,
+          total: 15,
+          uploadedAt: uploadTimeAgo(4 * 24 * 60 * 60 * 1000),
+          skus: ["TF20-S", "TF20-L"],
+          colors: ["柚木色", "黑色"],
+          cover: 4,
+        },
+      ];
+
+      const categories = [
+        { id: "桌类", label: "桌类", cover: 0 },
+        { id: "板式", label: "板式", cover: 2 },
+        { id: "户外", label: "户外", cover: 4 },
+        { id: "蹦床", label: "蹦床", cover: 1 },
+        { id: "沙发", label: "沙发", cover: 5 },
+        { id: "宠物", label: "宠物", cover: 6 },
+        { id: "电竞椅", label: "电竞椅", cover: 3 },
       ];
 
       const channels = [
@@ -1348,6 +1650,7 @@
             id: `${group.id}-${String(number).padStart(2, "0")}`,
             groupId: group.id,
             channel: group.channel,
+            category: group.category,
             product: group.product,
             spu: group.spu,
             country: group.country,
@@ -1368,8 +1671,8 @@
 
       const state = {
         channel: "Amazon",
+        category: "桌类",
         groupId: "amazon-0501-de-main",
-        spu: "全部",
         country: "全部",
         role: "全部",
         color: "全部",
@@ -1388,53 +1691,144 @@
       const titleStats = document.getElementById("titleStats");
       const assetGrid = document.getElementById("assetGrid");
       const resultSummary = document.getElementById("resultsHeading");
+      const downloadFiltered = document.getElementById("downloadFiltered");
       const previewDialog = document.getElementById("previewDialog");
       const dialogImage = document.getElementById("dialogImage");
       const previewTitle = document.getElementById("previewTitle");
       const dialogMeta = document.getElementById("dialogMeta");
       const dialogSelect = document.getElementById("dialogSelect");
-      const selects = {
-        spu: document.getElementById("spuFilter"),
-        country: document.getElementById("countryFilter"),
-        role: document.getElementById("roleFilter"),
-        color: document.getElementById("colorFilter"),
-      };
+      const uploadButton = document.getElementById("uploadButton");
+      const uploadInput = document.getElementById("uploadInput");
+      const globalSearch = document.getElementById("globalSearch");
+      const filterSearch = document.getElementById("filterSearch");
+      const countryFilter = document.getElementById("countryFilter");
+      const roleFilter = document.getElementById("roleFilter");
+      const colorFilter = document.getElementById("colorFilter");
 
       function unique(values) {
         return [...new Set(values)];
       }
 
-      function visibleGroups() {
+      function queryTokens() {
+        return state.query
+          .trim()
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+      }
+
+      function matchesQuery(haystack, tokens) {
+        if (!tokens.length) return true;
+        const text = haystack.toLowerCase();
+        return tokens.every((token) => text.includes(token));
+      }
+
+      function groupUploadedAt(group) {
+        return uploadTimeOverrides[group.id] || group.uploadedAt;
+      }
+
+      function formatRelativeUploadTime(value) {
+        const timestamp = new Date(value).getTime();
+        if (!Number.isFinite(timestamp)) return "未知时间";
+        const elapsed = Math.max(0, Date.now() - timestamp);
+        const minute = 60 * 1000;
+        const hour = 60 * minute;
+        const day = 24 * hour;
+        if (elapsed < minute) return "刚刚";
+        if (elapsed < hour) return `${Math.floor(elapsed / minute)} 分钟前`;
+        if (elapsed < day) return `${Math.floor(elapsed / hour)} 小时前`;
+        if (elapsed < 2 * day) return "昨天";
+        if (elapsed < 30 * day) return `${Math.floor(elapsed / day)} 天前`;
+        return new Date(timestamp).toLocaleDateString("zh-CN");
+      }
+
+      function groupHaystack(group) {
+        return [
+          group.channel,
+          group.channelLabel,
+          group.category,
+          group.product,
+          group.spu,
+          group.country,
+          group.countryCode,
+          group.role,
+          ...group.skus,
+          ...group.colors,
+        ].join(" ");
+      }
+
+      function assetHaystack(asset) {
+        return [
+          asset.filename,
+          asset.channel,
+          asset.category,
+          asset.product,
+          asset.spu,
+          asset.sku,
+          asset.color,
+          asset.country,
+          asset.countryCode,
+          asset.role,
+          asset.tone,
+          asset.extension,
+          asset.dimensions,
+        ].join(" ");
+      }
+
+      function groupMatchesQuery(group, tokens) {
+        if (matchesQuery(groupHaystack(group), tokens)) return true;
+        return assets.some((asset) => asset.groupId === group.id && matchesQuery(assetHaystack(asset), tokens));
+      }
+
+      function groupsForCategory(categoryId, withFilters = true) {
+        const tokens = queryTokens();
         return groupDefinitions.filter((group) => {
           const inChannel = state.channel === "全部" || group.channel === state.channel;
-          const inSpu = state.spu === "全部" || group.spu === state.spu;
-          const inCountry = state.country === "全部" || group.country === state.country;
-          const inRole = state.role === "全部" || group.role === state.role;
-          return inChannel && inSpu && inCountry && inRole;
+          const inCategory = group.category === categoryId;
+          const inCountry = !withFilters || state.country === "全部" || group.country === state.country;
+          const inRole = !withFilters || state.role === "全部" || group.role === state.role;
+          return inChannel && inCategory && inCountry && inRole && groupMatchesQuery(group, tokens);
         });
       }
 
-      function ensureActiveGroup(groups) {
-        if (!groups.some((group) => group.id === state.groupId)) {
-          state.groupId = groups[0]?.id || "";
-          state.color = "全部";
-        }
+      function visibleGroups() {
+        return groupsForCategory(state.category);
       }
 
-      function activeGroup() {
-        return groupDefinitions.find((group) => group.id === state.groupId) || null;
+      function firstAvailableCategory() {
+        return categories.find((category) => groupsForCategory(category.id, false).length)?.id || categories[0].id;
+      }
+
+      function normalizeState() {
+        if (!categories.some((category) => category.id === state.category)) {
+          state.category = categories[0].id;
+        }
+        if (!groupsForCategory(state.category, false).length) {
+          state.category = firstAvailableCategory();
+        }
+
+        const baseGroups = groupsForCategory(state.category, false);
+        const countries = unique(baseGroups.map((group) => group.country));
+        const roles = unique(baseGroups.map((group) => group.role));
+        if (state.country !== "全部" && !countries.includes(state.country)) state.country = "全部";
+        if (state.role !== "全部" && !roles.includes(state.role)) state.role = "全部";
+
+        const groups = visibleGroups();
+        const colors = unique(groups.flatMap((group) => group.colors));
+        if (state.color !== "全部" && !colors.includes(state.color)) state.color = "全部";
+        state.groupId = groups[0]?.id || "";
       }
 
       function scopedAssets() {
-        return assets.filter((asset) => asset.groupId === state.groupId);
+        const groupIds = new Set(visibleGroups().map((group) => group.id));
+        return assets.filter((asset) => groupIds.has(asset.groupId));
       }
 
       function filteredAssets() {
-        const query = state.query.trim().toLowerCase();
+        const tokens = queryTokens();
         return scopedAssets().filter((asset) => {
           const matchesColor = state.color === "全部" || asset.color === state.color;
-          const haystack = `${asset.filename} ${asset.spu} ${asset.sku} ${asset.color} ${asset.country} ${asset.role}`.toLowerCase();
-          return matchesColor && (!query || haystack.includes(query));
+          return matchesColor && matchesQuery(assetHaystack(asset), tokens);
         });
       }
 
@@ -1447,7 +1841,7 @@
       }
 
       function renderChannels() {
-        channelScope.textContent = `${assets.length} 张`;
+        channelScope.textContent = `${assets.length} 套`;
         channelList.innerHTML = channels
           .map((channel) => {
             const isActive = state.channel === channel.id;
@@ -1462,64 +1856,84 @@
 
       function renderGroupCards(groups) {
         groupCount.textContent = `${groups.length} 个素材组`;
-        if (!groups.length) {
+        const cards = categories.map((category) => {
+          const categoryGroups = groupsForCategory(category.id);
+          const total = categoryGroups.reduce((sum, group) => sum + group.total, 0);
+          const active = category.id === state.category;
+          return { ...category, groups: categoryGroups, total, active };
+        });
+        if (!cards.some((card) => card.groups.length)) {
           groupScroller.innerHTML = `<div class="empty-state"><div><i data-lucide="folder-x" aria-hidden="true"></i><p>当前组合没有匹配的素材组</p></div></div>`;
           return;
         }
-        groupScroller.innerHTML = groups
-          .map((group) => {
-            const active = group.id === state.groupId;
-            const slots = group.role === "主副图" ? `主副图 ${Math.min(group.target, group.total)}/${group.target}` : `${group.target} 个版位`;
-            return `<button class="group-card" type="button" data-group-id="${group.id}" aria-current="${active}">
-              <span class="group-cover cover-${group.cover}" aria-hidden="true"></span>
+        groupScroller.innerHTML = cards
+          .map((category) => {
+            const disabled = !category.groups.length;
+            const roles = unique(category.groups.map((group) => group.role)).join(" / ") || "暂无素材";
+            return `<button class="group-card" type="button" data-category="${category.id}" aria-current="${category.active}" ${disabled ? "disabled" : ""}>
               <span class="group-copy">
-                <span class="group-name">${group.product} · ${group.spu}</span>
-                <span class="group-meta">${group.countryCode} · ${group.role}</span>
-                <span class="group-count"><strong>${group.total}</strong> 张 · ${slots}</span>
+                <span class="group-name">${category.label} · ${category.groups.length} 个素材组</span>
+                <span class="group-meta">${roles}</span>
+                <span class="group-count"><strong>${category.total}</strong> 张</span>
               </span>
             </button>`;
           })
           .join("");
       }
 
-      function optionMarkup(label, values, selected) {
-        return [`<option value="全部">全部${label}</option>`]
-          .concat(values.map((value) => `<option value="${value}">${value}</option>`))
-          .map((option) => option.replace(`value="${selected}"`, `value="${selected}" selected`))
+      function filterOptions(values, selectedValue, allLabel) {
+        return [`<option value="全部">${allLabel}</option>`, ...values.map((value) => `<option value="${value}">${value}</option>`)]
+          .map((option) => option.replace(`value="${selectedValue}"`, `value="${selectedValue}" selected`))
           .join("");
       }
 
-      function renderSelects(groups, group) {
-        const allSpus = unique(groupDefinitions.map((item) => item.spu));
-        const allCountries = unique(groupDefinitions.map((item) => item.country));
-        const allRoles = unique(groupDefinitions.map((item) => item.role));
-        selects.spu.innerHTML = optionMarkup("SPU", allSpus, state.spu);
-        selects.country.innerHTML = optionMarkup("国家", allCountries, state.country);
-        selects.role.innerHTML = optionMarkup("图片类型", allRoles, state.role);
-
-        const colors = group ? group.colors : [];
-        if (!colors.includes(state.color)) state.color = "全部";
-        selects.color.innerHTML = optionMarkup("颜色", colors, state.color);
+      function renderFilterControls() {
+        const baseGroups = groupsForCategory(state.category, false);
+        const countries = unique(baseGroups.map((group) => group.country));
+        const roles = unique(baseGroups.map((group) => group.role));
+        const colors = unique(visibleGroups().flatMap((group) => group.colors));
+        countryFilter.innerHTML = filterOptions(countries, state.country, "全部国家");
+        roleFilter.innerHTML = filterOptions(roles, state.role, "全部图片类型");
+        colorFilter.innerHTML = filterOptions(colors, state.color, "全部颜色");
       }
 
-      function renderContext(group, filtered) {
-        if (!group) {
+      function syncSearchInputs() {
+        if (globalSearch.value !== state.query) globalSearch.value = state.query;
+        if (filterSearch.value !== state.query) filterSearch.value = state.query;
+      }
+
+      function latestUploadTime(groups) {
+        return groups
+          .map((group) => new Date(groupUploadedAt(group)).getTime())
+          .filter(Number.isFinite)
+          .sort((a, b) => b - a)[0];
+      }
+
+      function renderContext(groups, filtered) {
+        if (!groups.length) {
           breadcrumb.innerHTML = `<span>素材库</span><i data-lucide="chevron-right" aria-hidden="true"></i><strong>无结果</strong>`;
-          pageTitle.textContent = "没有匹配的素材组";
+          pageTitle.textContent = "没有匹配的品类素材";
           titleStats.innerHTML = "";
           return;
         }
-        const crumbParts = ["素材库", group.channelLabel, group.spu, group.country, group.role];
+        const channelLabel = state.channel === "全部" ? "全部渠道" : state.channel;
+        const crumbParts = ["素材库", channelLabel, state.category];
+        if (state.country !== "全部") crumbParts.push(state.country);
+        if (state.role !== "全部") crumbParts.push(state.role);
         breadcrumb.innerHTML = crumbParts
           .map((part, index) => `${index ? '<i data-lucide="chevron-right" aria-hidden="true"></i>' : ""}<strong>${part}</strong>`)
           .join("");
-        pageTitle.textContent = `${group.product} · ${group.spu} · ${group.country} · ${group.role}`;
-        const mainSlots = group.role === "主副图" ? `主副图 ${Math.min(group.target, group.total)}/${group.target}` : `${group.target} 个版位`;
+        pageTitle.textContent = `${state.category} · ${channelLabel}`;
+        const total = groups.reduce((sum, group) => sum + group.total, 0);
+        const colors = unique(groups.flatMap((group) => group.colors));
+        const roles = unique(groups.map((group) => group.role));
+        const latest = latestUploadTime(groups);
         titleStats.innerHTML = `
-          <span class="stat-pill"><strong>${group.total}</strong>总张数</span>
-          <span class="stat-pill"><strong>${group.colors.length}</strong>种颜色</span>
-          <span class="stat-pill">${mainSlots}</span>
-          <span class="stat-pill">更新于 ${group.updated}</span>`;
+          <span class="stat-pill"><strong>${total}</strong>总张数</span>
+          <span class="stat-pill"><strong>${colors.length}</strong>种颜色</span>
+          <span class="stat-pill"><strong>${groups.length}</strong>个素材组</span>
+          <span class="stat-pill">${roles.join(" / ")}</span>
+          <span class="stat-pill">更新于 ${formatRelativeUploadTime(latest)}</span>`;
       }
 
       function assetCard(asset) {
@@ -1545,6 +1959,7 @@
 
       function renderGrid(filtered) {
         assetGrid.dataset.columns = String(state.columns);
+        assetGrid.style.setProperty("--columns", state.columns);
         if (!filtered.length) {
           assetGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1"><div><i data-lucide="search-x" aria-hidden="true"></i><p>没有符合条件的图片</p></div></div>`;
           return;
@@ -1553,13 +1968,18 @@
       }
 
       function renderSummary(group, filtered) {
-        const groupTotal = group?.total || 0;
+        const groupTotal = group.reduce((sum, item) => sum + item.total, 0);
         resultSummary.innerHTML = `
           <span><strong>${groupTotal}</strong> 张素材组总数</span>
           <span class="summary-separator" aria-hidden="true"></span>
           <span>筛选 <strong>${filtered.length}</strong> 张</span>
           <span class="summary-separator" aria-hidden="true"></span>
           <span>已选 <strong>${state.selected.size}</strong> 张</span>`;
+      }
+
+      function syncDownloadButton(filtered) {
+        downloadFiltered.disabled = !filtered.length;
+        downloadFiltered.title = filtered.length ? `下载当前筛选出的 ${filtered.length} 张图片` : "没有可下载的图片";
       }
 
       function syncColumnControls() {
@@ -1569,20 +1989,117 @@
       }
 
       function render() {
+        normalizeState();
         const groups = visibleGroups();
-        ensureActiveGroup(groups);
-        const group = activeGroup();
         const filtered = filteredAssets();
         renderChannels();
         renderGroupCards(groups);
-        renderSelects(groups, group);
-        renderContext(group, filtered);
-        renderSummary(group, filtered);
+        renderFilterControls();
+        syncSearchInputs();
+        renderContext(groups, filtered);
+        renderSummary(groups, filtered);
         renderGrid(filtered);
+        syncDownloadButton(filtered);
         syncColumnControls();
         document.body.dataset.theme = state.theme;
         localStorage.setItem("asset-library-theme", state.theme);
         window.lucide?.createIcons();
+      }
+
+      function safeFileName(name) {
+        return name.replace(/[\\/:*?"<>|]/g, "_").replace(/\.(webp|jpg|jpeg|png)$/i, ".jpg");
+      }
+
+      function loadReferenceImage() {
+        return new Promise((resolve) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => resolve(null);
+          image.src = "./assets/reference-library.png";
+        });
+      }
+
+      function canvasToBlob(canvas) {
+        return new Promise((resolve) => {
+          try {
+            canvas.toBlob(resolve, "image/jpeg", 0.92);
+          } catch {
+            resolve(null);
+          }
+        });
+      }
+
+      async function assetToImageBlob(asset, referenceImage) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1600;
+        canvas.height = 1600;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f3f5f3";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (referenceImage) {
+          const sourceWidth = referenceImage.width / 8;
+          const sx = Math.min(asset.crop, 7) * sourceWidth;
+          ctx.drawImage(referenceImage, sx, 0, sourceWidth, referenceImage.height, 0, 0, canvas.width, 1120);
+        } else {
+          ctx.fillStyle = "#dfe8e2";
+          ctx.fillRect(0, 0, canvas.width, 1120);
+        }
+
+        ctx.fillStyle = "rgba(14, 18, 16, 0.18)";
+        ctx.fillRect(0, 900, canvas.width, 220);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 1120, canvas.width, 480);
+        ctx.fillStyle = "#0f1b17";
+        ctx.font = "700 54px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(`${asset.role} ${String(asset.order).padStart(2, "0")}`, 80, 1240);
+        ctx.font = "700 44px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(`${asset.color} · ${asset.sku}`, 80, 1335);
+        ctx.fillStyle = "#6c7a73";
+        ctx.font = "500 34px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(`${asset.channel} · ${asset.category} · ${asset.countryCode} · ${asset.dimensions}`, 80, 1418);
+        ctx.fillText(asset.filename, 80, 1495);
+        const blob = await canvasToBlob(canvas);
+        if (blob) return blob;
+        if (referenceImage) return assetToImageBlob(asset, null);
+        return new Blob([], { type: "image/jpeg" });
+      }
+
+      async function downloadFilteredAssets() {
+        const filtered = filteredAssets();
+        if (!filtered.length) return;
+        if (!window.JSZip) {
+          window.alert("下载组件未加载完成，请稍后刷新页面再试。");
+          return;
+        }
+
+        const originalLabel = downloadFiltered.innerHTML;
+        downloadFiltered.disabled = true;
+        downloadFiltered.innerHTML = '<i data-lucide="loader-circle" aria-hidden="true"></i><span>打包中</span>';
+        window.lucide?.createIcons();
+
+        try {
+          const zip = new window.JSZip();
+          const referenceImage = await loadReferenceImage();
+          for (const asset of filtered) {
+            const blob = await assetToImageBlob(asset, referenceImage);
+            zip.file(safeFileName(asset.filename), blob);
+          }
+          const zipBlob = await zip.generateAsync({ type: "blob" });
+          const url = URL.createObjectURL(zipBlob);
+          const link = document.createElement("a");
+          const scope = `${state.channel === "全部" ? "全部渠道" : state.channel}_${state.category}_${filtered.length}张`;
+          link.href = url;
+          link.download = `${scope}_筛选图片.zip`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        } finally {
+          downloadFiltered.innerHTML = originalLabel;
+          syncDownloadButton(filteredAssets());
+          window.lucide?.createIcons();
+        }
       }
 
       function selectAsset(id) {
@@ -1594,11 +2111,12 @@
       function openPreview(id) {
         const asset = assets.find((item) => item.id === id);
         if (!asset) return;
+        const assetGroup = groupDefinitions.find((group) => group.id === asset.groupId);
         dialogImage.className = `dialog-image crop-${asset.crop}`;
         previewTitle.textContent = `${asset.color} · ${asset.role} ${String(asset.order).padStart(2, "0")}`;
         dialogMeta.innerHTML = `
           <div><dt>SPU</dt><dd>${asset.product} · ${asset.spu}</dd></div>
-          <div><dt>投放范围</dt><dd>${asset.channel} · ${asset.country} · ${asset.role}</dd></div>
+          <div><dt>投放范围</dt><dd>${asset.channel} · ${assetGroup?.category || ""} · ${asset.country} · ${asset.role}</dd></div>
           <div><dt>颜色 / 光调</dt><dd>${asset.color} · ${asset.tone}</dd></div>
           <div><dt>规格</dt><dd>${asset.dimensions} · ${asset.extension} · ${asset.size}</dd></div>
           <div><dt>文件名</dt><dd>${asset.filename}</dd></div>`;
@@ -1614,18 +2132,19 @@
         const button = event.target.closest("[data-channel]");
         if (!button) return;
         state.channel = button.dataset.channel;
-        state.spu = "全部";
         state.country = "全部";
         state.role = "全部";
         state.color = "全部";
-        state.groupId = visibleGroups()[0]?.id || "";
+        state.category = firstAvailableCategory();
         render();
       });
 
       groupScroller.addEventListener("click", (event) => {
-        const card = event.target.closest("[data-group-id]");
+        const card = event.target.closest("[data-category]");
         if (!card) return;
-        state.groupId = card.dataset.groupId;
+        state.category = card.dataset.category;
+        state.country = "全部";
+        state.role = "全部";
         state.color = "全部";
         render();
       });
@@ -1649,30 +2168,56 @@
         openPreview(card.dataset.assetId);
       });
 
-      Object.entries(selects).forEach(([key, element]) => {
-        element.addEventListener("change", () => {
-          state[key] = element.value;
-          if (["spu", "country", "role"].includes(key)) state.groupId = visibleGroups()[0]?.id || "";
-          if (["spu", "country", "role"].includes(key)) {
-            state.color = "全部";
-          }
-          render();
-        });
+      function applySearch(value, useGlobalScope) {
+        state.query = value;
+        if (useGlobalScope && state.query.trim()) {
+          state.channel = "全部";
+          state.country = "全部";
+          state.role = "全部";
+          state.color = "全部";
+          state.category = firstAvailableCategory();
+        }
+        render();
+      }
+
+      globalSearch.addEventListener("input", (event) => {
+        applySearch(event.target.value, true);
       });
 
-      document.getElementById("globalSearch").addEventListener("input", (event) => {
-        state.query = event.target.value;
+      filterSearch.addEventListener("input", (event) => {
+        applySearch(event.target.value, false);
+      });
+
+      countryFilter.addEventListener("change", (event) => {
+        state.country = event.target.value;
+        state.color = "全部";
         render();
       });
 
+      roleFilter.addEventListener("change", (event) => {
+        state.role = event.target.value;
+        state.color = "全部";
+        render();
+      });
+
+      colorFilter.addEventListener("change", (event) => {
+        state.color = event.target.value;
+        render();
+      });
+
+      [globalSearch, filterSearch].forEach((input) => {
+        input.addEventListener("search", (event) => {
+          applySearch(event.target.value, input === globalSearch);
+        });
+      });
+
       document.getElementById("clearFilters").addEventListener("click", () => {
-        state.spu = "全部";
         state.country = "全部";
         state.role = "全部";
         state.color = "全部";
         state.query = "";
-        document.getElementById("globalSearch").value = "";
-        state.groupId = visibleGroups()[0]?.id || "";
+        globalSearch.value = "";
+        filterSearch.value = "";
         render();
       });
 
@@ -1680,6 +2225,24 @@
         const button = event.target.closest("[data-columns]");
         if (!button) return;
         state.columns = Number(button.dataset.columns);
+        render();
+      });
+
+      downloadFiltered.addEventListener("click", downloadFilteredAssets);
+
+      uploadButton.addEventListener("click", () => {
+        uploadInput.click();
+      });
+
+      uploadInput.addEventListener("change", () => {
+        const groups = visibleGroups();
+        if (!uploadInput.files.length || !groups.length) return;
+        const uploadedAt = new Date().toISOString();
+        groups.forEach((group) => {
+          uploadTimeOverrides[group.id] = uploadedAt;
+        });
+        localStorage.setItem(uploadTimeStorageKey, JSON.stringify(uploadTimeOverrides));
+        uploadInput.value = "";
         render();
       });
 

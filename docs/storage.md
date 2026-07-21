@@ -1,0 +1,39 @@
+# Local Storage
+
+## Configuration
+
+```dotenv
+STORAGE_DRIVER="local"
+LOCAL_STORAGE_ROOT="./data/storage"
+MAX_UPLOAD_BYTES="26214400"
+```
+
+`LOCAL_STORAGE_ROOT` is server-only and is ignored by Git. Browser code must use authenticated preview and download routes, never filesystem paths.
+
+## Storage Contract
+
+`StorageService` defines `put`, `get`, `delete`, `exists`, `move`, and `getPublicOrDownloadUrl`. The current [LocalStorageService](../lib/storage/local-storage-service.ts) resolves relative keys beneath the configured root and rejects traversal.
+
+The service uses these relative key families:
+
+| Purpose | Key prefix |
+| --- | --- |
+| In-flight original and derivatives | `temporary/<uploadRequestId>/` |
+| Original uploads | `originals/<uuid>.<extension>` |
+| Thumbnails | `thumbnails/<uuid>.webp` |
+| Previews | `previews/<uuid>.webp` |
+| Development seed files | `seed/` |
+
+## Upload Safety
+
+1. Generate server-side UUID-based keys.
+2. Enforce `MAX_UPLOAD_BYTES`.
+3. Decode with Sharp and accept only JPEG, PNG or WEBP based on actual bytes.
+4. Calculate SHA-256 before finalizing the object.
+5. Write temporary objects, create derivatives, then move them to final keys.
+6. Mark the file object and asset `ACTIVE` only after all moves succeed.
+7. Reuse an active matching SHA-256 file object and create another business `Asset` when appropriate.
+
+## Retention and Deletion
+
+Soft deletion changes only the `Asset` row. It never calls `StorageService.delete`. When no active asset references a file object, its cleanup state becomes `PENDING`. A future worker may physically delete only after rechecking that condition transactionally; that worker is intentionally not implemented in this phase.

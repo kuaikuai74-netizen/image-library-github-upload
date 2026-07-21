@@ -1,3 +1,14 @@
 .DS_Store
 Thumbs.db
 *.log
+.env
+.env.local
+.env.*.local
+node_modules/
+.next/
+*.tsbuildinfo
+var/storage/
+var/thumbnails/
+data/storage/
+test-results/
+playwright-report/

@@ -764,6 +764,12 @@
         background-size: 820% auto;
       }
 
+      .asset-preview.is-uploaded,
+      .dialog-image.is-uploaded {
+        background-position: center;
+        background-size: cover;
+      }
+
       .asset-preview::after {
         position: absolute;
         right: 0;
@@ -938,6 +944,29 @@
         background-image: url("./assets/reference-library.png");
         background-repeat: no-repeat;
         background-size: 700% auto;
+      }
+
+      .toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 50;
+        max-width: min(360px, calc(100vw - 32px));
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 10px 12px;
+        background: var(--panel-strong);
+        box-shadow: var(--shadow);
+        color: var(--text);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       .dialog-aside {
@@ -1309,11 +1338,12 @@
           <dl class="dialog-meta" id="dialogMeta"></dl>
           <div class="dialog-actions">
             <button id="dialogSelect" type="button"><i data-lucide="check" aria-hidden="true"></i>选择</button>
-            <button class="primary" type="button"><i data-lucide="download" aria-hidden="true"></i>下载原图</button>
+            <button id="dialogDownload" class="primary" type="button"><i data-lucide="download" aria-hidden="true"></i>下载原图</button>
           </div>
         </aside>
       </div>
     </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
       const uploadTimeStorageKey = "asset-library-upload-times";
@@ -1697,8 +1727,10 @@
       const previewTitle = document.getElementById("previewTitle");
       const dialogMeta = document.getElementById("dialogMeta");
       const dialogSelect = document.getElementById("dialogSelect");
+      const dialogDownload = document.getElementById("dialogDownload");
       const uploadButton = document.getElementById("uploadButton");
       const uploadInput = document.getElementById("uploadInput");
+      const toast = document.getElementById("toast");
       const globalSearch = document.getElementById("globalSearch");
       const filterSearch = document.getElementById("filterSearch");
       const countryFilter = document.getElementById("countryFilter");
@@ -1707,6 +1739,24 @@
 
       function unique(values) {
         return [...new Set(values)];
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[character]);
+      }
+
+      let toastTimer;
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("is-visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 3200);
       }
 
       function queryTokens() {
@@ -1938,21 +1988,23 @@
 
       function assetCard(asset) {
         const selected = state.selected.has(asset.id);
+        const previewClass = asset.previewUrl ? " is-uploaded" : "";
+        const previewStyle = asset.previewUrl ? ` style="background-image: url('${asset.previewUrl}')"` : "";
         return `<article class="asset-card ${selected ? "is-selected" : ""}" data-asset-id="${asset.id}" tabindex="0">
-          <div class="asset-preview crop-${asset.crop}">
+          <div class="asset-preview crop-${asset.crop}${previewClass}"${previewStyle}>
             <div class="asset-actions">
-              <button class="view-action" type="button" data-action="preview" title="预览 ${asset.filename}" aria-label="预览 ${asset.filename}"><i data-lucide="expand" aria-hidden="true"></i></button>
+              <button class="view-action" type="button" data-action="preview" title="预览 ${escapeHtml(asset.filename)}" aria-label="预览 ${escapeHtml(asset.filename)}"><i data-lucide="expand" aria-hidden="true"></i></button>
               <button class="select-button" type="button" data-action="select" aria-pressed="${selected}" title="${selected ? "取消选择" : "选择图片"}" aria-label="${selected ? "取消选择" : "选择图片"}"><i data-lucide="check" aria-hidden="true"></i></button>
             </div>
           </div>
           <div class="asset-body">
             <div class="asset-tags">
-              <span class="tag">${asset.countryCode}</span>
-              <span class="tag role">${asset.role} ${String(asset.order).padStart(2, "0")}</span>
-              <span class="tag tone">${asset.tone}</span>
+              <span class="tag">${escapeHtml(asset.countryCode)}</span>
+              <span class="tag role">${escapeHtml(asset.role)} ${String(asset.order).padStart(2, "0")}</span>
+              <span class="tag tone">${escapeHtml(asset.tone)}</span>
             </div>
-            <p class="asset-name">${asset.color} · ${asset.sku}</p>
-            <div class="asset-detail"><span>${asset.dimensions}</span><span>${asset.size}</span></div>
+            <p class="asset-name">${escapeHtml(asset.color)} · ${escapeHtml(asset.sku)}</p>
+            <div class="asset-detail"><span>${escapeHtml(asset.dimensions)}</span><span>${escapeHtml(asset.size)}</span></div>
           </div>
         </article>`;
       }
@@ -1978,8 +2030,11 @@
       }
 
       function syncDownloadButton(filtered) {
-        downloadFiltered.disabled = !filtered.length;
-        downloadFiltered.title = filtered.length ? `下载当前筛选出的 ${filtered.length} 张图片` : "没有可下载的图片";
+        const selectedCount = state.selected.size;
+        const downloadableCount = selectedCount || filtered.length;
+        downloadFiltered.disabled = !downloadableCount;
+        downloadFiltered.title = downloadableCount ? `下载 ${downloadableCount} 张图片` : "没有可下载的图片";
+        downloadFiltered.innerHTML = `<i data-lucide="download" aria-hidden="true"></i><span>${selectedCount ? `下载已选 ${selectedCount} 张` : "下载筛选结果"}</span>`;
       }
 
       function syncColumnControls() {
@@ -2030,6 +2085,7 @@
       }
 
       async function assetToImageBlob(asset, referenceImage) {
+        if (asset.file) return asset.file;
         const canvas = document.createElement("canvas");
         canvas.width = 1600;
         canvas.height = 1600;
@@ -2067,7 +2123,9 @@
 
       async function downloadFilteredAssets() {
         const filtered = filteredAssets();
-        if (!filtered.length) return;
+        const selectedAssets = assets.filter((asset) => state.selected.has(asset.id));
+        const assetsToDownload = selectedAssets.length ? selectedAssets : filtered;
+        if (!assetsToDownload.length) return;
         if (!window.JSZip) {
           window.alert("下载组件未加载完成，请稍后刷新页面再试。");
           return;
@@ -2081,20 +2139,21 @@
         try {
           const zip = new window.JSZip();
           const referenceImage = await loadReferenceImage();
-          for (const asset of filtered) {
+          for (const asset of assetsToDownload) {
             const blob = await assetToImageBlob(asset, referenceImage);
             zip.file(safeFileName(asset.filename), blob);
           }
           const zipBlob = await zip.generateAsync({ type: "blob" });
           const url = URL.createObjectURL(zipBlob);
           const link = document.createElement("a");
-          const scope = `${state.channel === "全部" ? "全部渠道" : state.channel}_${state.category}_${filtered.length}张`;
+          const scope = `${state.channel === "全部" ? "全部渠道" : state.channel}_${state.category}_${assetsToDownload.length}张`;
           link.href = url;
-          link.download = `${scope}_筛选图片.zip`;
+          link.download = `${scope}_${selectedAssets.length ? "已选" : "筛选"}图片.zip`;
           document.body.appendChild(link);
           link.click();
           link.remove();
           URL.revokeObjectURL(url);
+          showToast(`已开始下载 ${assetsToDownload.length} 张图片`);
         } finally {
           downloadFiltered.innerHTML = originalLabel;
           syncDownloadButton(filteredAssets());
@@ -2112,15 +2171,17 @@
         const asset = assets.find((item) => item.id === id);
         if (!asset) return;
         const assetGroup = groupDefinitions.find((group) => group.id === asset.groupId);
-        dialogImage.className = `dialog-image crop-${asset.crop}`;
+        dialogImage.className = `dialog-image crop-${asset.crop}${asset.previewUrl ? " is-uploaded" : ""}`;
+        dialogImage.style.backgroundImage = asset.previewUrl ? `url("${asset.previewUrl}")` : "";
         previewTitle.textContent = `${asset.color} · ${asset.role} ${String(asset.order).padStart(2, "0")}`;
         dialogMeta.innerHTML = `
           <div><dt>SPU</dt><dd>${asset.product} · ${asset.spu}</dd></div>
           <div><dt>投放范围</dt><dd>${asset.channel} · ${assetGroup?.category || ""} · ${asset.country} · ${asset.role}</dd></div>
           <div><dt>颜色 / 光调</dt><dd>${asset.color} · ${asset.tone}</dd></div>
           <div><dt>规格</dt><dd>${asset.dimensions} · ${asset.extension} · ${asset.size}</dd></div>
-          <div><dt>文件名</dt><dd>${asset.filename}</dd></div>`;
+          <div><dt>文件名</dt><dd>${escapeHtml(asset.filename)}</dd></div>`;
         dialogSelect.dataset.assetId = asset.id;
+        dialogDownload.dataset.assetId = asset.id;
         dialogSelect.innerHTML = state.selected.has(asset.id)
           ? '<i data-lucide="minus" aria-hidden="true"></i>取消选择'
           : '<i data-lucide="check" aria-hidden="true"></i>选择';
@@ -2237,11 +2298,40 @@
       uploadInput.addEventListener("change", () => {
         const groups = visibleGroups();
         if (!uploadInput.files.length || !groups.length) return;
+        const targetGroup = groups[0];
         const uploadedAt = new Date().toISOString();
-        groups.forEach((group) => {
-          uploadTimeOverrides[group.id] = uploadedAt;
+        const existingOrders = assets.filter((asset) => asset.groupId === targetGroup.id).map((asset) => asset.order);
+        const startingOrder = existingOrders.length ? Math.max(...existingOrders) : 0;
+        [...uploadInput.files].forEach((file, index) => {
+          const extension = (file.name.split(".").pop() || "jpg").toUpperCase();
+          const filename = file.name || `上传素材_${index + 1}.${extension.toLowerCase()}`;
+          assets.push({
+            id: `${targetGroup.id}-upload-${Date.now()}-${index}`,
+            groupId: targetGroup.id,
+            channel: targetGroup.channel,
+            category: targetGroup.category,
+            product: targetGroup.product,
+            spu: targetGroup.spu,
+            country: targetGroup.country,
+            countryCode: targetGroup.countryCode,
+            role: targetGroup.role,
+            sku: targetGroup.skus[0],
+            color: targetGroup.colors[0],
+            tone: "上传",
+            extension,
+            size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+            dimensions: "原始尺寸",
+            order: startingOrder + index + 1,
+            crop: 0,
+            filename,
+            file,
+            previewUrl: URL.createObjectURL(file),
+          });
         });
+        targetGroup.total += uploadInput.files.length;
+        uploadTimeOverrides[targetGroup.id] = uploadedAt;
         localStorage.setItem(uploadTimeStorageKey, JSON.stringify(uploadTimeOverrides));
+        showToast(`已上传 ${uploadInput.files.length} 张图片至 ${targetGroup.product} · ${targetGroup.role}`);
         uploadInput.value = "";
         render();
       });
@@ -2255,6 +2345,21 @@
       dialogSelect.addEventListener("click", () => {
         selectAsset(dialogSelect.dataset.assetId);
         openPreview(dialogSelect.dataset.assetId);
+      });
+
+      dialogDownload.addEventListener("click", async () => {
+        const asset = assets.find((item) => item.id === dialogDownload.dataset.assetId);
+        if (!asset) return;
+        const blob = await assetToImageBlob(asset, await loadReferenceImage());
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = safeFileName(asset.filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast("已开始下载原图");
       });
 
       previewDialog.addEventListener("click", (event) => {

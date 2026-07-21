@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ASSET_ADMIN
+  UPLOADER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum AssetStatus {
+  PENDING
+  UPLOADING
+  PROCESSING
+  ACTIVE
+  FAILED
+  DELETED
+}
+
+enum UploadRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+enum FileObjectStatus {
+  PROCESSING
+  ACTIVE
+  FAILED
+}
+
+enum FileObjectCleanupStatus {
+  NONE
+  PENDING
+  FAILED
+  COMPLETED
+}
+
+enum AuditAction {
+  ASSET_CREATED
+  ASSET_UPDATED
+  ASSET_MOVED
+  ASSET_DELETED
+  ASSET_RESTORED
+  ASSET_DOWNLOADED
+  BATCH_DOWNLOAD_REQUESTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  username     String     @unique
+  name         String
+  passwordHash String
+  role         UserRole   @default(VIEWER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  uploadedAssets Asset[]
+  deletedAssets  Asset[]     @relation("AssetDeletedBy")
+  uploadRequests UploadRequest[]
+  auditLogs      AuditLog[]
+
+  @@index([status])
+  @@index([role])
+}
+
+model Channel {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assetGroups AssetGroup[]
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  previewSlot Int          @default(0)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  products    Product[]
+  assetGroups AssetGroup[]
+
+  @@index([sortOrder])
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  spu         String       @unique
+  name        String
+  categoryId  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  assetGroups AssetGroup[]
+
+  @@index([categoryId])
+}
+
+model AssetGroup {
+  id          String   @id @default(cuid())
+  channelId   String
+  categoryId  String
+  productId   String
+  countryCode String   @db.VarChar(8)
+  assetType   String   @db.VarChar(64)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Restrict)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  assets      Asset[]
+  uploadRequests UploadRequest[]
+
+  @@unique([channelId, productId, countryCode, assetType])
+  @@index([channelId, categoryId, countryCode, assetType])
+  @@index([productId])
+}
+
+model Asset {
+  id            String     @id @default(cuid())
+  assetGroupId  String
+  fileObjectId  String
+  uploadedById  String?
+  uploadRequestId String?
+  deletedById   String?
+  filename      String
+  originalFilename String
+  sku           String     @db.VarChar(128)
+  color         String     @db.VarChar(64)
+  assetType     String     @db.VarChar(64)
+  notes         String     @default("")
+  status        AssetStatus @default(PENDING)
+  errorCode     String?
+  errorMessage  String?
+  previewSlot   Int        @default(0)
+  sortOrder     Int        @default(1)
+  deletedAt     DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  assetGroup    AssetGroup @relation(fields: [assetGroupId], references: [id], onDelete: Cascade)
+  fileObject    FileObject @relation(fields: [fileObjectId], references: [id], onDelete: Restrict)
+  uploadedBy    User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadRequest UploadRequest? @relation(fields: [uploadRequestId], references: [id], onDelete: SetNull)
+  deletedBy     User?      @relation("AssetDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  auditLogs     AuditLog[]
+
+  @@index([assetGroupId, status, createdAt])
+  @@index([fileObjectId, status])
+  @@index([uploadedById])
+  @@index([color])
+  @@index([filename])
+  @@index([sku])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model FileObject {
+  id                 String                  @id @default(cuid())
+  originalStorageKey String                  @unique
+  thumbnailStorageKey String?
+  previewStorageKey  String?
+  sha256             String                  @db.VarChar(64)
+  mimeType           String                  @db.VarChar(128)
+  width              Int
+  height             Int
+  fileSizeBytes      Int
+  status             FileObjectStatus        @default(PROCESSING)
+  cleanupStatus      FileObjectCleanupStatus @default(NONE)
+  cleanupError       String?
+  cleanupRequestedAt DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  assets             Asset[]
+
+  @@index([sha256, status])
+  @@index([cleanupStatus, updatedAt])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?
+  action     AuditAction
+  objectType String      @db.VarChar(64)
+  objectId   String
+  details    Json?
+  createdAt  DateTime    @default(now())
+  actor      User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  asset      Asset?      @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  assetId    String?
+
+  @@index([objectType, objectId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model UploadRequest {
+  id             String              @id @default(cuid())
+  idempotencyKey String              @unique
+  assetGroupId   String
+  uploaderId     String
+  status         UploadRequestStatus @default(PENDING)
+  createdAt      DateTime            @default(now())
+  completedAt    DateTime?
+  assetGroup     AssetGroup          @relation(fields: [assetGroupId], references: [id], onDelete: Restrict)
+  uploader       User                @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+  assets         Asset[]
+
+  @@index([assetGroupId, createdAt])
+  @@index([uploaderId, createdAt])
+}

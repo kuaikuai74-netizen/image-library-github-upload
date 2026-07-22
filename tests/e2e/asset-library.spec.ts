@@ -18,6 +18,15 @@ test("administrator manages an uploaded asset from login through sign-out", asyn
 
   await page.getByRole("button", { name: "上传素材" }).click();
   await expect(page.getByRole("heading", { name: "上传静态素材" })).toBeVisible();
+  await expect(page.getByLabel("渠道")).toHaveText(/Amazon[\s\S]*多渠道/);
+  await expect(page.getByLabel("品类")).toHaveText(/桌类[\s\S]*板式[\s\S]*户外[\s\S]*电竞椅[\s\S]*沙发[\s\S]*蹦床[\s\S]*宠物/);
+  await expect(page.getByLabel("SPU")).toHaveAttribute("type", "text");
+  await expect(page.getByLabel("国家")).toHaveText(/德国[\s\S]*英国[\s\S]*法国[\s\S]*意大利[\s\S]*西班牙[\s\S]*荷兰[\s\S]*波兰/);
+  await expect(page.getByLabel("素材组")).toHaveText(/主副图[\s\S]*A\+详情页[\s\S]*品牌营销[\s\S]*其他/);
+  await page.getByRole("button", { name: "ZIP 自动分国" }).click();
+  await expect(page.getByText("ZIP 自动识别")).toBeVisible();
+  await expect(page.getByRole("button", { name: "选择 ZIP 压缩包" })).toBeVisible();
+  await page.getByRole("button", { name: "单国图片" }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: `e2e-${Date.now()}.png`,
     mimeType: "image/png",

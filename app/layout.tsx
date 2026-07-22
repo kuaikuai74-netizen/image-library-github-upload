@@ -10,9 +10,9 @@ const themeScript = `
 (() => {
   try {
     const theme = localStorage.getItem("visual-asset-theme");
-    document.documentElement.dataset.theme = theme === "light" || theme === "dark" ? theme : "dark";
+    document.documentElement.dataset.theme = theme === "light" || theme === "dark" ? theme : "light";
   } catch {
-    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.theme = "light";
   }
 })();
 `;

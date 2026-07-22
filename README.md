@@ -41,6 +41,10 @@ npm run db:seed
 
 seed 使用 `DEV_ADMIN_EMAIL`、`DEV_ADMIN_USERNAME` 和 `DEV_ADMIN_PASSWORD` 创建或更新 `SUPER_ADMIN` 账号；不会在仓库中保存明文密码。
 
+## 部署
+
+生产或局域网部署使用 `npm run db:deploy` 应用已提交的 Prisma 迁移；`npm run db:migrate` 只用于本地开发时创建新迁移。部署、备份和隔离恢复的完整步骤见 [docs/deployment.md](docs/deployment.md)。
+
 ## 测试与质量检查
 
 ```bash
@@ -59,7 +63,11 @@ $env:TEST_DATABASE_URL="postgresql://.../image_library_test?schema=public"
 $env:TEST_STORAGE_ROOT="./data/test-storage"
 $env:TEST_ADMIN_EMAIL="admin@example.test"
 $env:TEST_ADMIN_PASSWORD="..."
-npm run db:migrate
+$env:DATABASE_URL=$env:TEST_DATABASE_URL
+$env:DEV_ADMIN_EMAIL=$env:TEST_ADMIN_EMAIL
+$env:DEV_ADMIN_USERNAME="test-admin"
+$env:DEV_ADMIN_PASSWORD=$env:TEST_ADMIN_PASSWORD
+npm run db:deploy
 npm run db:seed
 npm run test:integration
 
@@ -87,7 +95,10 @@ npm run e2e
 ## 本地上传与文件访问
 
 - `POST /api/uploads` 接收同一素材组内最多 20 个 JPEG、PNG 或 WEBP 文件，要求 `assetGroupId`、`idempotencyKey` 和与文件顺序对应的元数据。
+- `POST /api/uploads/context` 接收渠道、品类、SPU、国家、素材组与图片。服务端会按输入的 SPU 创建或复用商品，并创建或复用对应素材组；新商品的名称默认与 SPU 相同。
+- `POST /api/uploads/archive` 接收一个 ZIP 和渠道、品类、SPU、素材组上下文。服务端从 ZIP 路径中的 `德语`、`英语`、`法语`、`意大利语`、`西班牙语` 目录分别识别德国、英国、法国、意大利、西班牙，并为每个识别出的国家创建或复用对应素材组。
 - 服务端限制单文件大小为 `MAX_UPLOAD_BYTES`，使用 Sharp 解码确认真实图片格式，计算 SHA-256，并生成 WebP 缩略图和预览图。
+- ZIP 上传额外受 `MAX_ZIP_UPLOAD_BYTES`、`MAX_ZIP_ENTRIES` 和 `MAX_ZIP_UNCOMPRESSED_BYTES` 限制；不会解压到服务器磁盘。
 - 文件先写入 `temporary/`，处理成功后移动到 `originals/`、`thumbnails/`、`previews/`。数据库仅保存相对 `storageKey`，不保存绝对路径。
 - 图片通过已登录的 `GET /api/assets/:assetId/content?variant=original|thumbnail|preview` 读取；前端不会获取或拼接本地目录路径。
 - `DELETE /api/assets/:assetId` 仅软删除素材记录并写入操作日志，不会删除存储对象。只有后续受控清理任务确认没有任何 `ACTIVE` 素材引用文件对象时，才允许物理删除。

@@ -12,14 +12,14 @@ function isThemeMode(value: string | null): value is ThemeMode {
 }
 
 function getThemeSnapshot(): ThemeMode {
-  if (typeof document === "undefined") return "dark";
+  if (typeof document === "undefined") return "light";
 
   try {
     const currentTheme = document.documentElement.dataset.theme ?? localStorage.getItem(themeStorageKey);
-    return isThemeMode(currentTheme) ? currentTheme : "dark";
+    return isThemeMode(currentTheme) ? currentTheme : "light";
   } catch {
     const htmlTheme = document.documentElement.dataset.theme ?? null;
-    return isThemeMode(htmlTheme) ? htmlTheme : "dark";
+    return isThemeMode(htmlTheme) ? htmlTheme : "light";
   }
 }
 
@@ -44,7 +44,7 @@ function applyTheme(theme: ThemeMode) {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeToThemeChanges, getThemeSnapshot, () => "dark");
+  const theme = useSyncExternalStore(subscribeToThemeChanges, getThemeSnapshot, () => "light");
 
   function selectTheme(nextTheme: ThemeMode) {
     applyTheme(nextTheme);

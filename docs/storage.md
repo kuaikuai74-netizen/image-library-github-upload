@@ -6,6 +6,9 @@
 STORAGE_DRIVER="local"
 LOCAL_STORAGE_ROOT="./data/storage"
 MAX_UPLOAD_BYTES="26214400"
+MAX_ZIP_UPLOAD_BYTES="262144000"
+MAX_ZIP_ENTRIES="500"
+MAX_ZIP_UNCOMPRESSED_BYTES="314572800"
 ```
 
 `LOCAL_STORAGE_ROOT` is server-only and is ignored by Git. Browser code must use authenticated preview and download routes, never filesystem paths.
@@ -33,6 +36,7 @@ The service uses these relative key families:
 5. Write temporary objects, create derivatives, then move them to final keys.
 6. Mark the file object and asset `ACTIVE` only after all moves succeed.
 7. Reuse an active matching SHA-256 file object and create another business `Asset` when appropriate.
+8. ZIP uploads remain in server memory, validate entry names and declared uncompressed sizes, and process each country sequentially. They recognize only the approved language directories, create or reuse the Product and country asset group from the upload context, and never extract files to the storage root.
 
 ## Retention and Deletion
 

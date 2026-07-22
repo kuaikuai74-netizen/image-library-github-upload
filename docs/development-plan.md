@@ -14,13 +14,13 @@ Status: completed for the static library page. Next.js, TypeScript strict mode, 
 
 ## Phase 2: Authentication and Metadata
 
-Status: authentication, authorization and database-backed library browsing are completed. Auth.js Credentials login, Prisma roles and library relations, protected paginated query APIs, URL-backed filters, development seed data, and unit tests are in place. Asset metadata mutations remain pending.
+Status: authentication, authorization and database-backed library browsing are completed. Auth.js Credentials login, Prisma roles and library relations, protected paginated query APIs, URL-backed filters, development seed data, and unit tests are in place. Asset metadata mutations are implemented in application code and await the same PostgreSQL-backed integration verification as library operations.
 
 **Acceptance:** unauthenticated requests cannot access protected routes; role checks are verified on UI and server; metadata persists after restart and validation errors are consistent.
 
 ## Phase 3: Local File Storage
 
-Status: completed in the application code, pending PostgreSQL-backed integration verification. `StorageService` and `LocalStorageService` isolate local filesystem access. Uploads use an idempotency key, a temporary directory, Sharp MIME/dimension validation, SHA-256 checksums, and WebP thumbnail/preview derivatives. Active assets are served only through authenticated content endpoints; deletion failures are recorded as `DELETE_FAILED`.
+Status: completed in the application code, pending PostgreSQL-backed integration verification. `StorageService` and `LocalStorageService` isolate local filesystem access. Uploads use an idempotency key, a temporary directory, Sharp MIME/dimension validation, SHA-256 checksums, and WebP thumbnail/preview derivatives. ZIP uploads map the approved language folders to country groups, process groups sequentially, and create or reuse the Product and each matching country asset group from the upload context. Active assets are served only through authenticated content endpoints; deletion failures are recorded as `DELETE_FAILED`.
 
 **Acceptance:** uploaded originals survive restart, retain bytes and MIME type, have an `assetGroupId`, generate thumbnails, and can be read without revealing absolute paths. Verify these against configured PostgreSQL before promoting the phase.
 
@@ -32,7 +32,7 @@ Status: completed in application code, pending PostgreSQL-backed integration ver
 
 ## Phase 5: LAN Deployment Readiness
 
-Document local deployment, backups, environment configuration, migration process, observability, and recovery procedures.
+Status: in progress. The production migration command and deployment, backup, recovery, and verification runbook are documented. The remaining acceptance work is a rehearsal against an isolated configured PostgreSQL deployment.
 
 **Acceptance:** a clean machine can deploy from documentation; database backup and file restore are rehearsed; no secret or absolute storage path is committed.
 

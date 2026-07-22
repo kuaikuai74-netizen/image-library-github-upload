@@ -19,6 +19,8 @@ export type UploadFileInput = {
   metadata: UploadMetadata;
 };
 
+type UploadFilesOptions = { sequential?: boolean };
+
 export type UploadFileResult = {
   assetId: string | null;
   originalFilename: string;
@@ -28,7 +30,7 @@ export type UploadFileResult = {
   errorMessage: string | null;
 };
 
-const maximumUploadBytes = Number(process.env.MAX_UPLOAD_BYTES ?? 26_214_400);
+export const maximumUploadBytes = Number(process.env.MAX_UPLOAD_BYTES ?? 26_214_400);
 
 function failureDetails(error: unknown) {
   if (error instanceof UploadError) return { code: error.code, message: error.message };
@@ -161,7 +163,7 @@ async function processFile(uploadRequestId: string, assetGroupId: string, upload
   }
 }
 
-export async function uploadFiles(assetGroupId: string, uploaderId: string, idempotencyKey: string, inputs: UploadFileInput[]) {
+export async function uploadFiles(assetGroupId: string, uploaderId: string, idempotencyKey: string, inputs: UploadFileInput[], options: UploadFilesOptions = {}) {
   const existing = await findExistingUpload(idempotencyKey);
   if (existing) return existing;
   const assetGroup = await prisma.assetGroup.findUnique({ where: { id: assetGroupId }, select: { id: true } });
@@ -177,11 +179,19 @@ export async function uploadFiles(assetGroupId: string, uploaderId: string, idem
     }
     throw error;
   }
-  const files = await Promise.all(inputs.map((input) => processFile(request.id, assetGroupId, uploaderId, input)));
+  const files = options.sequential
+    ? await processFilesSequentially(request.id, assetGroupId, uploaderId, inputs)
+    : await Promise.all(inputs.map((input) => processFile(request.id, assetGroupId, uploaderId, input)));
   const activeCount = files.filter((file) => file.status === "ACTIVE").length;
   const status = activeCount === files.length ? "COMPLETED" : activeCount ? "PARTIAL" : "FAILED";
   await prisma.uploadRequest.update({ where: { id: request.id }, data: { status, completedAt: new Date() } });
   return { requestId: request.id, status, reused: false, files };
+}
+
+async function processFilesSequentially(uploadRequestId: string, assetGroupId: string, uploaderId: string, inputs: UploadFileInput[]) {
+  const files: UploadFileResult[] = [];
+  for (const input of inputs) files.push(await processFile(uploadRequestId, assetGroupId, uploaderId, input));
+  return files;
 }
 
 async function findExistingUpload(idempotencyKey: string) {

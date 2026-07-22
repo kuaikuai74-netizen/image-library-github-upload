@@ -13,48 +13,48 @@
     <style>
       :root {
         color-scheme: light;
-        --canvas: #eef4f0;
+        --canvas: #eef6ff;
         --panel: rgba(255, 255, 255, 0.72);
-        --panel-soft: rgba(237, 244, 239, 0.66);
+        --panel-soft: rgba(232, 243, 255, 0.72);
         --panel-strong: rgba(255, 255, 255, 0.86);
-        --text: #17231f;
-        --muted: #5f6f67;
-        --subtle: #87978f;
-        --border: rgba(109, 132, 121, 0.22);
-        --accent: #13806f;
-        --accent-strong: #0b6659;
-        --accent-soft: rgba(192, 232, 220, 0.72);
+        --text: #17334d;
+        --muted: #55718b;
+        --subtle: #7d96ad;
+        --border: rgba(71, 125, 173, 0.24);
+        --accent: #247dcc;
+        --accent-strong: #115f9f;
+        --accent-soft: rgba(205, 229, 255, 0.78);
         --warm: #c36a33;
         --warm-soft: rgba(253, 226, 211, 0.78);
-        --glass: rgba(255, 255, 255, 0.54);
-        --glass-strong: rgba(255, 255, 255, 0.78);
-        --field-a: rgba(95, 205, 176, 0.28);
-        --field-b: rgba(112, 159, 222, 0.18);
-        --field-c: rgba(241, 166, 111, 0.16);
-        --shadow: 0 18px 50px rgba(34, 54, 45, 0.13);
-        --shadow-soft: 0 10px 28px rgba(28, 44, 38, 0.09);
+        --glass: rgba(255, 255, 255, 0.58);
+        --glass-strong: rgba(255, 255, 255, 0.82);
+        --field-a: rgba(112, 183, 250, 0.22);
+        --field-b: rgba(88, 143, 220, 0.18);
+        --field-c: rgba(244, 184, 104, 0.12);
+        --shadow: 0 18px 50px rgba(31, 91, 145, 0.14);
+        --shadow-soft: 0 10px 28px rgba(31, 91, 145, 0.1);
       }
 
       [data-theme="dark"] {
         color-scheme: dark;
-        --canvas: #0f1516;
-        --panel: rgba(20, 29, 29, 0.68);
-        --panel-soft: rgba(29, 41, 40, 0.62);
-        --panel-strong: rgba(29, 39, 38, 0.86);
-        --text: #f1f6f2;
-        --muted: #adbbb4;
-        --subtle: #81928a;
-        --border: rgba(177, 207, 194, 0.16);
-        --accent: #80c8b0;
-        --accent-strong: #b1e3d0;
-        --accent-soft: rgba(33, 70, 59, 0.72);
+        --canvas: #0e1d2c;
+        --panel: rgba(23, 43, 62, 0.7);
+        --panel-soft: rgba(32, 58, 79, 0.68);
+        --panel-strong: rgba(32, 54, 76, 0.88);
+        --text: #edf6ff;
+        --muted: #abc3da;
+        --subtle: #839db7;
+        --border: rgba(156, 198, 235, 0.16);
+        --accent: #79bcff;
+        --accent-strong: #b5ddff;
+        --accent-soft: rgba(24, 59, 92, 0.78);
         --warm: #f2a36d;
         --warm-soft: rgba(73, 45, 31, 0.78);
-        --glass: rgba(18, 27, 27, 0.5);
-        --glass-strong: rgba(23, 34, 34, 0.78);
-        --field-a: rgba(83, 199, 168, 0.19);
-        --field-b: rgba(79, 128, 193, 0.18);
-        --field-c: rgba(227, 128, 86, 0.12);
+        --glass: rgba(16, 35, 56, 0.54);
+        --glass-strong: rgba(23, 45, 67, 0.8);
+        --field-a: rgba(83, 166, 238, 0.18);
+        --field-b: rgba(79, 128, 193, 0.2);
+        --field-c: rgba(227, 158, 86, 0.1);
         --shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
         --shadow-soft: 0 14px 38px rgba(0, 0, 0, 0.24);
       }
@@ -264,7 +264,7 @@
         border: 1px solid var(--accent);
         border-radius: 7px;
         padding: 0 12px;
-        background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-strong) 82%, #4fb299));
+        background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-strong) 82%, #64a9e8));
         color: #ffffff;
         font-weight: 750;
         cursor: pointer;
@@ -1221,7 +1221,7 @@
       }
     </style>
   </head>
-  <body data-theme="dark">
+  <body data-theme="light">
     <div class="app-shell">
       <header class="topbar">
         <div class="brand" aria-label="视觉资产素材库">
@@ -1709,7 +1709,7 @@
         query: "",
         columns: 6,
         selected: new Set(),
-        theme: localStorage.getItem("asset-library-theme") || "dark",
+        theme: localStorage.getItem("asset-library-theme") || "light",
       };
 
       const channelList = document.getElementById("channelList");

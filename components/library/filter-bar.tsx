@@ -38,9 +38,9 @@ export function FilterBar({ filters, colors, onChange, onClear }: FilterBarProps
           </select>
         </label>
         <label>
-          <span>图片类型</span>
+          <span>素材组</span>
           <select value={filters.assetType} onChange={(event) => update("assetType", event.target.value)}>
-            <option value="all">全部类型</option>
+            <option value="all">全部素材</option>
             {assetTypeOptions.map((assetType) => <option key={assetType}>{assetType}</option>)}
           </select>
         </label>

@@ -19,7 +19,7 @@ type UploadRow = {
 
 type UploadMode = "images" | "archive";
 type UploadWorkspaceProps = { initialAssetGroupId?: string };
-type UploadContext = { channelId: string; categoryId: string; spu: string; countryCode: string; assetType: string };
+type UploadContext = { channelId: string; categoryId: string; spu: string; countryCode: string; assetType: string; other: string };
 type ArchiveUploadResponse = {
   countries: Array<{
     countryCode: string;
@@ -34,7 +34,7 @@ type ArchiveUploadResponse = {
   skippedEntries: Array<{ path: string; reason: string }>;
 };
 
-const emptyUploadContext: UploadContext = { channelId: "", categoryId: "", spu: "", countryCode: "", assetType: "" };
+const emptyUploadContext: UploadContext = { channelId: "", categoryId: "", spu: "", countryCode: "", assetType: "", other: "" };
 
 export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
   const router = useRouter();
@@ -136,7 +136,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
     formData.set("countryCode", context.countryCode);
     formData.set("assetType", context.assetType);
     formData.set("idempotencyKey", idempotencyKey.current);
-    formData.set("metadata", JSON.stringify(rows.map((row) => ({ assetType: context.assetType, sortOrder: row.sortOrder }))));
+    formData.set("metadata", JSON.stringify(rows.map((row) => ({ assetType: context.assetType, color: context.other.trim() || undefined, sortOrder: row.sortOrder }))));
     rows.forEach((row) => formData.append("files", row.file));
     setRows((current) => current.map((row) => ({ ...row, status: "UPLOADING", error: undefined, progress: 0 })));
 
@@ -188,7 +188,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
       <section className="upload-panel" aria-labelledby="upload-title">
         <div className="upload-heading">
           <div className="upload-heading-actions">
-            <button className="back-button" type="button" onClick={() => router.back()}><ArrowLeft aria-hidden="true" />返回素材库</button>
+            <button className="back-button" type="button" onClick={() => router.push("/")}><ArrowLeft aria-hidden="true" />返回素材库</button>
             <ThemeToggle />
           </div>
           <div><p>本地存储上传</p><h1 id="upload-title">上传静态素材</h1></div>
@@ -220,13 +220,17 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
             <option value="">请选择素材组</option>
             {assetTypeOptions.map((assetType) => <option value={assetType} key={assetType}>{assetType}</option>)}
           </select></label>
+          <label><span>其他</span>{uploadMode === "archive"
+            ? <span className="upload-country-auto">ZIP 自动识别</span>
+            : <input type="text" value={context.other} onChange={(event) => updateContext({ other: event.target.value })} placeholder="如白色、英标、欧标" autoComplete="off" disabled={submitting} />}
+          </label>
         </div>
 
         <div className="upload-context-summary" aria-live="polite">
           {uploadMode === "archive"
-            ? "ZIP 将按语言目录自动识别国家，并为每个国家自动创建或复用对应素材组。"
+            ? "ZIP 将按语言目录自动识别国家，并读取国家目录后的颜色、英标或欧标等“其他”目录。"
             : hasCompleteContext
-              ? <>上传时将自动创建或复用素材组：国家：{countryName(context.countryCode)}　SPU：{context.spu.trim()}　素材组：{context.assetType}</>
+              ? <>上传时将自动创建或复用素材组：国家：{countryName(context.countryCode)}　SPU：{context.spu.trim()}　素材组：{context.assetType}　其他：{context.other.trim() || "未指定"}</>
               : "请选择渠道、品类、国家和素材组，并输入 SPU。"}
         </div>
 
@@ -246,7 +250,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
         </> : <>
           <input ref={archiveInput} className="sr-only" type="file" accept=".zip,application/zip,application/x-zip-compressed" onChange={(event) => selectArchive(event.target.files)} disabled={submitting} />
           <button className="upload-dropzone" type="button" onClick={() => archiveInput.current?.click()} disabled={submitting || !hasArchiveContext}>
-            <Plus aria-hidden="true" /><span>{archiveFile ? archiveFile.name : "选择 ZIP 压缩包"}</span><small>{archiveFile ? formatFileSize(archiveFile.size) : "目录中的语言将自动匹配国家"}</small>
+            <Plus aria-hidden="true" /><span>{archiveFile ? archiveFile.name : "选择 ZIP 压缩包"}</span><small>{archiveFile ? formatFileSize(archiveFile.size) : "语言目录匹配国家，后续目录写入其他"}</small>
           </button>
           {archiveResult && <ArchiveUploadResult result={archiveResult} />}
         </>}
@@ -277,7 +281,7 @@ function ArchiveUploadResult({ result }: { result: ArchiveUploadResponse }) {
 type UploadResponse = { files: Array<{ originalFilename: string; status: string; duplicateOfAssetId: string | null; errorMessage: string | null }> };
 
 function contextFromGroup(group: AssetGroupListItem): UploadContext {
-  return { channelId: group.channelId, categoryId: group.categoryId, spu: group.product.spu, countryCode: group.countryCode, assetType: group.assetType };
+  return { channelId: group.channelId, categoryId: group.categoryId, spu: group.product.spu, countryCode: group.countryCode, assetType: group.assetType, other: "" };
 }
 
 function hasDirectContext(context: UploadContext) {

@@ -11,7 +11,7 @@ export const archiveLanguageCountryCodes = {
 export type ArchiveCountryCode = (typeof archiveLanguageCountryCodes)[keyof typeof archiveLanguageCountryCodes];
 
 export type ArchiveEntryClassification =
-  | { kind: "image"; countryCode: ArchiveCountryCode; filename: string; path: string }
+  | { kind: "image"; countryCode: ArchiveCountryCode; other: string | null; filename: string; path: string }
   | { kind: "skip"; path: string; reason: string };
 
 const imageExtensions = new Set(["jpg", "jpeg", "png", "webp"]);
@@ -28,11 +28,11 @@ export function classifyArchiveEntry(path: string): ArchiveEntryClassification {
   const extension = filename.split(".").at(-1)?.toLowerCase();
   if (!extension || !imageExtensions.has(extension)) return { kind: "skip", path, reason: "非支持图片" };
 
-  const countryCode = segments
-    .map((segment) => Object.hasOwn(archiveLanguageCountryCodes, segment) ? archiveLanguageCountryCodes[segment as keyof typeof archiveLanguageCountryCodes] : undefined)
-    .find((value): value is ArchiveCountryCode => Boolean(value));
-  if (!countryCode) return { kind: "skip", path, reason: "未识别国家目录" };
-  return { kind: "image", countryCode, filename, path };
+  const countrySegmentIndex = segments.findIndex((segment) => Object.hasOwn(archiveLanguageCountryCodes, segment));
+  if (countrySegmentIndex < 0) return { kind: "skip", path, reason: "未识别国家目录" };
+  const countryCode = archiveLanguageCountryCodes[segments[countrySegmentIndex] as keyof typeof archiveLanguageCountryCodes];
+  const otherSegment = segments.slice(countrySegmentIndex + 1, -1).find((segment) => segment.trim());
+  return { kind: "image", countryCode, other: otherSegment ?? null, filename, path };
 }
 
 export function compareArchivePaths(left: string, right: string) {

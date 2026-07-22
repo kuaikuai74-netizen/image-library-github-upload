@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     const object = await getStorageService().get(asset.fileObject.originalStorageKey);
     if (!object) throw new UploadError("FILE_NOT_FOUND", "文件不存在。", 404);
     await logDownload(asset.id, user.id);
-    return nodeStreamResponse(object.body, downloadHeaders(asset.originalFilename, asset.fileObject.mimeType));
+    return nodeStreamResponse(object.body, downloadHeaders(asset.filename, asset.fileObject.mimeType));
   } catch (error) {
     return routeFailure(error);
   }

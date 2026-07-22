@@ -5,11 +5,12 @@ import { contextUploadRequestSchema } from "../lib/assets/upload-schema";
 
 describe("ZIP archive upload routing", () => {
   it("maps the confirmed language folders to countries, including English to the UK", () => {
-    expect(classifyArchiveEntry("0501主图/德语/白色/主图1.jpg")).toMatchObject({ kind: "image", countryCode: "DE", filename: "主图1.jpg" });
-    expect(classifyArchiveEntry("英语/黑色/主图2.jpg")).toMatchObject({ kind: "image", countryCode: "UK" });
-    expect(classifyArchiveEntry("法语/粉色/主图3.webp")).toMatchObject({ kind: "image", countryCode: "FR" });
-    expect(classifyArchiveEntry("意大利语/白色/主图4.png")).toMatchObject({ kind: "image", countryCode: "IT" });
-    expect(classifyArchiveEntry("西班牙语/白色套装/主图5.jpeg")).toMatchObject({ kind: "image", countryCode: "ES" });
+    expect(classifyArchiveEntry("0501主图/德语/白色/主图1.jpg")).toMatchObject({ kind: "image", countryCode: "DE", other: "白色", filename: "主图1.jpg" });
+    expect(classifyArchiveEntry("英语/黑色/主图2.jpg")).toMatchObject({ kind: "image", countryCode: "UK", other: "黑色" });
+    expect(classifyArchiveEntry("法语/粉色/主图3.webp")).toMatchObject({ kind: "image", countryCode: "FR", other: "粉色" });
+    expect(classifyArchiveEntry("意大利语/白色/主图4.png")).toMatchObject({ kind: "image", countryCode: "IT", other: "白色" });
+    expect(classifyArchiveEntry("西班牙语/白色套装/主图5.jpeg")).toMatchObject({ kind: "image", countryCode: "ES", other: "白色套装" });
+    expect(classifyArchiveEntry("英语/英标/主图6.jpg")).toMatchObject({ kind: "image", countryCode: "UK", other: "英标" });
   });
 
   it("ignores archive metadata and unsupported or unrecognized paths", () => {

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma, type AssetStatus } from "@prisma/client";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
+import { createAssetDisplayFilename } from "@/lib/assets/asset-filenames";
 import { isReusableFileObject } from "@/lib/assets/file-object";
 import { ImageValidationError, verifyImageBuffer } from "@/lib/assets/image-validation";
 import { getStorageService } from "@/lib/storage";
@@ -17,6 +18,7 @@ export class UploadError extends Error {
 export type UploadFileInput = {
   file: File;
   metadata: UploadMetadata;
+  displayFilename?: string;
 };
 
 type UploadFilesOptions = { sequential?: boolean };
@@ -45,6 +47,8 @@ async function removeKeys(keys: string[]) {
 
 async function processFile(uploadRequestId: string, assetGroupId: string, uploaderId: string, input: UploadFileInput): Promise<UploadFileResult> {
   const originalFilename = input.file.name || "未命名图片";
+  const displayFilename = input.displayFilename ?? originalFilename;
+  const color = input.metadata.color?.trim() || "未指定";
   const fileId = randomUUID();
   const { temporaryOriginalKey, originalKey, temporaryThumbnailKey, temporaryPreviewKey, thumbnailKey, previewKey } = createAssetStorageKeys(uploadRequestId, fileId);
   let finalizedOriginalKey = originalKey;
@@ -72,10 +76,10 @@ async function processFile(uploadRequestId: string, assetGroupId: string, upload
             fileObjectId: existingFileObject.id,
             uploadedById: uploaderId,
             uploadRequestId,
-            filename: originalFilename,
+            filename: displayFilename,
             originalFilename,
             sku: "",
-            color: "未指定",
+            color,
             assetType: input.metadata.assetType,
             status: "ACTIVE",
             previewSlot: 0,
@@ -108,10 +112,10 @@ async function processFile(uploadRequestId: string, assetGroupId: string, upload
         fileObjectId: fileObject.id,
         uploadedById: uploaderId,
         uploadRequestId,
-        filename: originalFilename,
+        filename: displayFilename,
         originalFilename,
         sku: "",
-        color: "未指定",
+        color,
         assetType: input.metadata.assetType,
         status: "UPLOADING",
         previewSlot: 0,
@@ -166,8 +170,22 @@ async function processFile(uploadRequestId: string, assetGroupId: string, upload
 export async function uploadFiles(assetGroupId: string, uploaderId: string, idempotencyKey: string, inputs: UploadFileInput[], options: UploadFilesOptions = {}) {
   const existing = await findExistingUpload(idempotencyKey);
   if (existing) return existing;
-  const assetGroup = await prisma.assetGroup.findUnique({ where: { id: assetGroupId }, select: { id: true } });
+  const assetGroup = await prisma.assetGroup.findUnique({
+    where: { id: assetGroupId },
+    select: { id: true, countryCode: true, product: { select: { spu: true } } },
+  });
   if (!assetGroup) throw new UploadError("ASSET_GROUP_NOT_FOUND", "素材组不存在。", 404);
+  const namedInputs = inputs.map((input) => ({
+    ...input,
+    displayFilename: input.displayFilename ?? createAssetDisplayFilename({
+      spu: assetGroup.product.spu,
+      countryCode: assetGroup.countryCode,
+      assetType: input.metadata.assetType,
+      other: input.metadata.color,
+      sortOrder: input.metadata.sortOrder,
+      originalFilename: input.file.name,
+    }),
+  }));
 
   let request;
   try {
@@ -180,8 +198,8 @@ export async function uploadFiles(assetGroupId: string, uploaderId: string, idem
     throw error;
   }
   const files = options.sequential
-    ? await processFilesSequentially(request.id, assetGroupId, uploaderId, inputs)
-    : await Promise.all(inputs.map((input) => processFile(request.id, assetGroupId, uploaderId, input)));
+    ? await processFilesSequentially(request.id, assetGroupId, uploaderId, namedInputs)
+    : await Promise.all(namedInputs.map((input) => processFile(request.id, assetGroupId, uploaderId, input)));
   const activeCount = files.filter((file) => file.status === "ACTIVE").length;
   const status = activeCount === files.length ? "COMPLETED" : activeCount ? "PARTIAL" : "FAILED";
   await prisma.uploadRequest.update({ where: { id: request.id }, data: { status, completedAt: new Date() } });

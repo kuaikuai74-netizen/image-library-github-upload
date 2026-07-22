@@ -6,6 +6,7 @@ export const assetIdSchema = z.string().trim().regex(/^[a-z0-9-]{3,128}$/);
 export const uploadMetadataSchema = z.object({
   assetType: z.string().trim().min(1).max(64),
   sortOrder: z.coerce.number().int().min(1).max(10_000),
+  color: z.string().trim().min(1).max(64).optional(),
 });
 
 const countryCodeSchema = z.string().trim().refine((countryCode) => countryOptions.some((country) => country.code === countryCode), "请选择有效国家。");

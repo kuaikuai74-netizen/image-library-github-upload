@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Download, FilePenLine, Save, Trash2, X } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type { AssetGroupListItem, LibraryAsset } from "@/lib/library/contracts";
 import { assetTypeOptions, countryName } from "@/lib/library/countries";
@@ -52,6 +53,11 @@ export function AssetPreviewDialog({ asset, groups, selected, onClose, onToggle,
   if (!asset || !fields) return null;
   const currentAsset = asset;
   const currentFields = fields;
+  const mediaUrl = asset.previewUrl ?? asset.thumbnailUrl;
+  const previewStyle: CSSProperties = {
+    backgroundImage: `url("${mediaUrl ?? "/assets/reference-library.png"}")`,
+    ...(mediaUrl ? { backgroundPosition: "center", backgroundSize: "contain" } : {}),
+  };
 
   async function save() {
     setSaving(true);
@@ -81,7 +87,7 @@ export function AssetPreviewDialog({ asset, groups, selected, onClose, onToggle,
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="asset-dialog" role="dialog" aria-modal="true" aria-labelledby="preview-title" onMouseDown={(event) => event.stopPropagation()}>
-        <div className={`dialog-preview slot-${asset.previewSlot}`} style={{ backgroundImage: `url("${asset.previewUrl ?? asset.thumbnailUrl ?? "/assets/reference-library.png"}")` }} aria-label={`${asset.filename} 预览`} />
+        <div className={`dialog-preview slot-${asset.previewSlot}`} style={previewStyle} aria-label={`${asset.filename} 预览`} />
         <div className="dialog-info">
           <button className="close-dialog" type="button" onClick={onClose} aria-label="关闭详情"><X aria-hidden="true" /></button>
           <p>素材详情</p>
@@ -95,7 +101,7 @@ export function AssetPreviewDialog({ asset, groups, selected, onClose, onToggle,
           {canEdit && <div className="asset-editor">
             <label>素材类型<select value={fields.assetType} onChange={(event) => setFields({ ...fields, assetType: event.target.value })}>{assetTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
             <label>排序<input type="number" min="1" value={fields.sortOrder} onChange={(event) => setFields({ ...fields, sortOrder: Number(event.target.value) || 1 })} /></label>
-            <label>颜色<input value={fields.color} onChange={(event) => setFields({ ...fields, color: event.target.value })} /></label>
+            <label>其他<input value={fields.color} onChange={(event) => setFields({ ...fields, color: event.target.value })} /></label>
             <label>移动到素材组<select value={fields.assetGroupId} onChange={(event) => setFields({ ...fields, assetGroupId: event.target.value })}>{groups.map((group) => <option value={group.id} key={group.id}>{group.channelName} · {group.categoryName} · {group.product.spu} · {countryName(group.countryCode)} · {group.assetType}</option>)}</select></label>
             <label className="asset-editor-notes">备注<textarea value={fields.notes} maxLength={2000} onChange={(event) => setFields({ ...fields, notes: event.target.value })} /></label>
           </div>}

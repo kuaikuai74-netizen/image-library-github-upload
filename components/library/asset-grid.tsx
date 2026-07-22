@@ -7,7 +7,7 @@ import { countryName } from "@/lib/library/countries";
 
 type AssetGridProps = {
   assets: LibraryAsset[];
-  columns: 4 | 6 | 8;
+  columns: 4 | 5 | 6 | 7 | 8;
   selectedIds: Set<string>;
   onPreview: (asset: LibraryAsset) => void;
   onToggle: (assetId: string) => void;
@@ -26,9 +26,14 @@ export function AssetGrid({ assets, columns, selectedIds, onPreview, onToggle, c
     <div className="asset-grid" style={{ "--columns": columns } as CSSProperties}>
       {assets.map((asset) => {
         const selected = selectedIds.has(asset.id);
+        const mediaUrl = asset.thumbnailUrl ?? asset.previewUrl;
+        const previewStyle: CSSProperties = {
+          backgroundImage: `url("${mediaUrl ?? "/assets/reference-library.png"}")`,
+          ...(mediaUrl ? { backgroundPosition: "center", backgroundSize: "contain" } : {}),
+        };
         return (
           <article className={selected ? "asset-card is-selected" : "asset-card"} key={asset.id}>
-            <button className={`asset-preview slot-${asset.previewSlot}`} style={{ backgroundImage: `url("${asset.thumbnailUrl ?? asset.previewUrl ?? "/assets/reference-library.png"}")` }} type="button" onClick={() => onPreview(asset)} aria-label={`预览 ${asset.filename}`}>
+            <button className={`asset-preview slot-${asset.previewSlot}`} style={previewStyle} type="button" onClick={() => onPreview(asset)} aria-label={`预览 ${asset.filename}`}>
               <span className="preview-shade" />
               <span className="preview-action"><Expand aria-hidden="true" /></span>
             </button>
@@ -51,8 +56,8 @@ export function AssetGrid({ assets, columns, selectedIds, onPreview, onToggle, c
                 <span className="type-tag">{asset.assetType}</span>
                 <span>#{String(asset.order).padStart(2, "0")}</span>
               </div>
-              <strong>{asset.spu}</strong>
-              <p>{countryName(asset.countryCode)} · {asset.color}</p>
+              <strong title={asset.filename}>{asset.filename}</strong>
+              <p>{asset.spu} · {countryName(asset.countryCode)} · {asset.color}</p>
               <p className="asset-file">{asset.width} x {asset.height} · {(asset.fileSizeBytes / 1_000_000).toFixed(2)} MB</p>
             </div>
             {selected && <span className="selected-mark"><Check aria-hidden="true" /></span>}

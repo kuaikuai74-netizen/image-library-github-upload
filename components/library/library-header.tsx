@@ -2,6 +2,7 @@
 
 import { Images, LogOut, Search, Upload, UserRound } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { LibraryUser } from "@/lib/auth/roles";
 
@@ -15,6 +16,22 @@ type LibraryHeaderProps = {
 };
 
 export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, roleLabel, canUpload }: LibraryHeaderProps) {
+  const queryTimeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    return () => window.clearTimeout(queryTimeoutRef.current);
+  }, []);
+
+  function scheduleQueryChange(value: string) {
+    window.clearTimeout(queryTimeoutRef.current);
+    queryTimeoutRef.current = window.setTimeout(() => onQueryChange(value), 450);
+  }
+
+  function commitQueryChange(value: string) {
+    window.clearTimeout(queryTimeoutRef.current);
+    onQueryChange(value);
+  }
+
   return (
     <header className="topbar">
       <div className="brand" aria-label="跨境电商视觉资产">
@@ -29,9 +46,13 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
         <Search aria-hidden="true" />
         <span className="sr-only">全局搜索</span>
         <input
+          key={query}
           type="search"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          defaultValue={query}
+          onChange={(event) => scheduleQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commitQueryChange(event.currentTarget.value);
+          }}
           placeholder="搜索 SPU、文件名、SKU 或品类"
         />
       </label>

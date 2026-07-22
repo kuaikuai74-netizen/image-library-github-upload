@@ -3,7 +3,7 @@ import type { Archiver } from "archiver";
 import { PassThrough, Readable } from "node:stream";
 import { getStorageService } from "@/lib/storage";
 
-type DownloadableAsset = { id: string; originalFilename: string; fileObject: { originalStorageKey: string } };
+type DownloadableAsset = { id: string; filename: string; fileObject: { originalStorageKey: string } };
 
 function safeDownloadFilename(filename: string) {
   return filename.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").slice(0, 180) || "asset";
@@ -34,10 +34,10 @@ async function appendArchive(archive: Archiver, assets: DownloadableAsset[]) {
   for (const asset of assets) {
     const object = await storage.get(asset.fileObject.originalStorageKey);
     if (!object) {
-      manifest.push({ assetId: asset.id, filename: asset.originalFilename, status: "FAILED" });
+      manifest.push({ assetId: asset.id, filename: asset.filename, status: "FAILED" });
       continue;
     }
-    let filename = safeDownloadFilename(asset.originalFilename);
+    let filename = safeDownloadFilename(asset.filename);
     if (usedFilenames.has(filename)) filename = `${asset.id}-${filename}`;
     usedFilenames.add(filename);
     archive.append(object.body, { name: filename });

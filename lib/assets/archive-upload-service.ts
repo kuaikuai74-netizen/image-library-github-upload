@@ -5,7 +5,7 @@ import type { ArchiveUploadRequest } from "@/lib/assets/archive-upload-schema";
 import { ensureAssetGroup } from "@/lib/assets/asset-group-service";
 import { maximumUploadBytes, UploadError, uploadFiles, type UploadFileInput } from "@/lib/assets/upload-service";
 
-type ArchiveImageEntry = { countryCode: ArchiveCountryCode; entry: yauzl.Entry; filename: string; path: string };
+type ArchiveImageEntry = { countryCode: ArchiveCountryCode; other: string | null; entry: yauzl.Entry; filename: string; path: string };
 type ArchiveSkippedEntry = { path: string; reason: string };
 
 export type ArchiveUploadCountryResult = {
@@ -149,7 +149,7 @@ function listArchiveEntries(zipFile: yauzl.ZipFile) {
 
       const classification = classifyArchiveEntry(entry.fileName);
       if (classification.kind === "image") {
-        images.push({ countryCode: classification.countryCode, entry, filename: classification.filename, path: classification.path });
+        images.push({ countryCode: classification.countryCode, other: classification.other, entry, filename: classification.filename, path: classification.path });
       } else if (classification.reason !== "目录" && classification.reason !== "系统文件") {
         skippedEntries.push({ path: classification.path, reason: classification.reason });
       }
@@ -181,7 +181,7 @@ async function createArchiveUploadInputs(zipFile: yauzl.ZipFile, entries: Archiv
       const body = await readZipEntry(zipFile, entry.entry, maximumUploadBytes);
       const fileBody = new Uint8Array(body.byteLength);
       fileBody.set(body);
-      inputs.push({ file: new File([fileBody], entry.filename), metadata: { assetType, sortOrder: index + 1 } });
+      inputs.push({ file: new File([fileBody], entry.filename), metadata: { assetType, color: entry.other ?? undefined, sortOrder: index + 1 } });
     } catch {
       failures.push({ filename: entry.filename, message: "无法读取压缩包中的图片。" });
     }

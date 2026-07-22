@@ -175,6 +175,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .input-with-icon svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .clear-button { align-self: end; min-height: 37px; color: var(--muted); }
 .clear-button:hover, .quiet-button:hover { border-color: var(--accent); color: var(--accent); }
+.danger-button { border-color: var(--danger); color: var(--danger-text); }
+.danger-button:hover { border-color: var(--danger); color: var(--danger-text); }
 
 .asset-toolbar { margin-bottom: 14px; }
 .asset-actions { justify-content: flex-end; flex-wrap: wrap; }
@@ -302,7 +304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .back-button { display: inline-flex; align-items: center; min-height: 34px; gap: 6px; border: 1px solid var(--border); border-radius: 6px; padding: 0 9px; background: var(--panel-raised); color: var(--muted); cursor: pointer; }
 .back-button:hover { border-color: var(--accent); color: var(--accent); }
 .back-button svg { width: 15px; height: 15px; }
-.upload-context { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.upload-context { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .upload-context label { display: grid; min-width: 0; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .upload-context select, .upload-context input, .upload-row input { width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; background: var(--panel-raised); color: var(--text); }
 .upload-country-auto { display: flex; align-items: center; min-height: 38px; border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; background: var(--accent-soft); color: var(--accent); }

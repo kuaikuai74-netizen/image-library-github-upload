@@ -6,28 +6,60 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetGrid } from "@/components/library/asset-grid";
 import { AssetPreviewDialog } from "@/components/library/asset-preview-dialog";
 import { RecycleBinDialog } from "@/components/library/recycle-bin-dialog";
+import { AnnouncementStrip } from "@/components/content/announcement-strip";
 import { CategoryCards } from "@/components/library/category-cards";
 import { ChannelNav } from "@/components/library/channel-nav";
 import { FilterBar, type Filters } from "@/components/library/filter-bar";
 import { LibraryHeader } from "@/components/library/library-header";
+import { ProductLibraryCards } from "@/components/library/product-library-cards";
 import { hasAssetPermission } from "@/lib/auth/permissions";
 import { roleLabels, type LibraryUser } from "@/lib/auth/roles";
-import type { ApiFailure, ApiSuccess, AssetFilters, AssetGroupListItem, CategoryListItem, ChannelListItem, LibraryAsset, Paginated } from "@/lib/library/contracts";
+import type { VisibleAnnouncement } from "@/lib/content/repository";
+import type { ApiFailure, ApiSuccess, AssetFilters, AssetGroupPage, CategoryListItem, ChannelListItem, LibraryAsset, Paginated, ProductListItem } from "@/lib/library/contracts";
 
-type AssetLibraryProps = { currentUser: LibraryUser };
+type AssetLibraryProps = { currentUser: LibraryUser; announcements: VisibleAnnouncement[] };
 
 type LibraryData = {
   queryKey: string;
   channels: ChannelListItem[];
   categories: CategoryListItem[];
   filters: AssetFilters;
+  products: Paginated<ProductListItem>;
   assets: Paginated<LibraryAsset>;
-  assetGroups: Paginated<AssetGroupListItem>;
-  allAssetGroups: Paginated<AssetGroupListItem>;
+  assetGroups: AssetGroupPage;
+  allAssetGroups: AssetGroupPage;
 };
 
 function pageSizeForColumns(columns: 4 | 5 | 6 | 7 | 8) {
   return columns % 2 === 0 ? 24 : columns * 5;
+}
+
+function emptyPage<T>(page: number, pageSize: number): Paginated<T> {
+  return { items: [], page, pageSize, total: 0, totalPages: 1 };
+}
+
+type PaginationItem = number | "ellipsis";
+
+function paginationItems(currentPage: number, totalPages: number): PaginationItem[] {
+  const total = Math.max(1, totalPages);
+  const current = Math.min(Math.max(1, currentPage), total);
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+
+  const pageNumbers = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 4) [2, 3, 4, 5].forEach((page) => pageNumbers.add(page));
+  if (current >= total - 3) [total - 4, total - 3, total - 2, total - 1].forEach((page) => pageNumbers.add(page));
+
+  const sortedPages = [...pageNumbers].filter((page) => page >= 1 && page <= total).sort((left, right) => left - right);
+  const items: PaginationItem[] = [];
+  for (const page of sortedPages) {
+    const previous = items.at(-1);
+    if (typeof previous === "number") {
+      if (page - previous === 2) items.push(previous + 1);
+      else if (page - previous > 2) items.push("ellipsis");
+    }
+    items.push(page);
+  }
+  return items;
 }
 
 async function requestData<T>(url: string, signal: AbortSignal) {
@@ -48,7 +80,7 @@ function filtersFromParams(searchParams: URLSearchParams): Filters {
   };
 }
 
-export function AssetLibrary({ currentUser }: AssetLibraryProps) {
+export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,14 +88,17 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
   const [error, setError] = useState<{ queryKey: string; message: string } | null>(null);
   const [columns, setColumns] = useState<4 | 5 | 6 | 7 | 8>(6);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(() => new Set());
   const [previewAsset, setPreviewAsset] = useState<LibraryAsset | null>(null);
   const [notice, setNotice] = useState("");
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [productDownloadPending, setProductDownloadPending] = useState(false);
   const [recycleBinOpen, setRecycleBinOpen] = useState(false);
 
   const state = useMemo(() => ({
     channelId: searchParams.get("channelId") ?? "all",
     categoryId: searchParams.get("categoryId") ?? "",
+    spu: searchParams.get("spu") ?? "",
     filters: filtersFromParams(searchParams),
     page: Number(searchParams.get("page") ?? "1") || 1,
   }), [searchParams]);
@@ -73,6 +108,19 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
     params.set("pageSize", String(pageSizeForColumns(columns)));
     return params.toString();
   }, [columns, searchParams]);
+
+  const productQueryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (state.channelId !== "all") params.set("channelId", state.channelId);
+    if (state.categoryId) params.set("categoryId", state.categoryId);
+    if (state.spu) params.set("spu", state.spu);
+    else if (state.filters.query.trim()) params.set("q", state.filters.query.trim());
+    params.set("page", "1");
+    params.set("pageSize", "100");
+    return params.toString();
+  }, [state.categoryId, state.channelId, state.filters.query, state.spu]);
+
+  const dataKey = useMemo(() => `${queryString}|products:${productQueryString}`, [productQueryString, queryString]);
 
   const updateUrl = useCallback((changes: Record<string, string | undefined>) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -90,30 +138,33 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
     const scopeParams = new URLSearchParams();
     if (state.channelId !== "all") scopeParams.set("channelId", state.channelId);
     if (state.categoryId) scopeParams.set("categoryId", state.categoryId);
+    if (state.spu) scopeParams.set("spu", state.spu);
+    const assetPageSize = pageSizeForColumns(columns);
 
     Promise.all([
       requestData<ChannelListItem[]>("/api/channels", controller.signal),
       requestData<CategoryListItem[]>(`/api/categories?${scopeParams.toString()}`, controller.signal),
       requestData<AssetFilters>(`/api/asset-filters?${scopeParams.toString()}`, controller.signal),
-      requestData<Paginated<LibraryAsset>>(`/api/assets?${queryString}`, controller.signal),
-      requestData<Paginated<AssetGroupListItem>>(`/api/asset-groups?${queryString}`, controller.signal),
-      requestData<Paginated<AssetGroupListItem>>("/api/asset-groups?page=1&pageSize=100", controller.signal),
+      requestData<Paginated<ProductListItem>>(`/api/products?${productQueryString}`, controller.signal),
+      state.spu ? requestData<Paginated<LibraryAsset>>(`/api/assets?${queryString}`, controller.signal) : Promise.resolve(emptyPage<LibraryAsset>(state.page, assetPageSize)),
+      requestData<AssetGroupPage>(`/api/asset-groups?${queryString}`, controller.signal),
+      requestData<AssetGroupPage>("/api/asset-groups?page=1&pageSize=100", controller.signal),
     ])
-      .then(([channels, categories, filters, assets, assetGroups, allAssetGroups]) => {
+      .then(([channels, categories, filters, products, assets, assetGroups, allAssetGroups]) => {
         if (controller.signal.aborted) return;
-        setData({ queryKey: queryString, channels, categories, filters, assets, assetGroups, allAssetGroups });
+        setData({ queryKey: dataKey, channels, categories, filters, products, assets, assetGroups, allAssetGroups });
       })
       .catch((requestError: unknown) => {
         if (controller.signal.aborted) return;
-        setError({ queryKey: queryString, message: requestError instanceof Error ? requestError.message : "查询失败，请稍后重试。" });
+        setError({ queryKey: dataKey, message: requestError instanceof Error ? requestError.message : "查询失败，请稍后重试。" });
       });
 
     return () => controller.abort();
-  }, [queryString, reloadVersion, state.categoryId, state.channelId]);
+  }, [columns, dataKey, productQueryString, queryString, reloadVersion, state.categoryId, state.channelId, state.page, state.spu]);
 
   useEffect(() => {
-    if (!state.categoryId && data?.categories[0]) updateUrl({ categoryId: data.categories[0].id, page: "1" });
-  }, [data?.categories, state.categoryId, updateUrl]);
+    if (!state.categoryId && !state.filters.query.trim() && data?.categories[0]) updateUrl({ categoryId: data.categories[0].id, page: "1" });
+  }, [data?.categories, state.categoryId, state.filters.query, updateUrl]);
 
   function updateFilters(filters: Filters) {
     updateUrl({
@@ -125,8 +176,29 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
     });
   }
 
+  function updateGlobalSearch(query: string) {
+    const trimmedQuery = query.trim();
+    updateUrl({
+      ...(trimmedQuery ? { categoryId: undefined } : {}),
+      spu: undefined,
+      countryCode: undefined,
+      assetType: undefined,
+      color: undefined,
+      q: trimmedQuery || undefined,
+      page: "1",
+    });
+  }
+
   function clearFilters() {
     updateUrl({ countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" });
+  }
+
+  function openProductLibrary(spu: string) {
+    updateUrl({ spu, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" });
+  }
+
+  function closeProductLibrary() {
+    updateUrl({ spu: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" });
   }
 
   function toggleAsset(assetId: string) {
@@ -134,6 +206,15 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
       const next = new Set(current);
       if (next.has(assetId)) next.delete(assetId);
       else next.add(assetId);
+      return next;
+    });
+  }
+
+  function toggleProduct(productId: string) {
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
       return next;
     });
   }
@@ -177,6 +258,29 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
     if (body.data.downloadUrl) window.location.assign(body.data.downloadUrl);
   }
 
+  async function handleProductBatchDownload(productIds?: string[]) {
+    const selectedIdsForDownload = productIds ?? data?.products.items.filter((product) => selectedProductIds.has(product.id)).map((product) => product.id) ?? [];
+    if (!selectedIdsForDownload.length || productDownloadPending) return;
+    setProductDownloadPending(true);
+    try {
+      const response = await fetch("/api/products/batch-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productIds: selectedIdsForDownload,
+          channelId: state.channelId === "all" ? undefined : state.channelId,
+          categoryId: state.categoryId || undefined,
+        }),
+      });
+      const body = await response.json() as ApiSuccess<{ totalAssets: number; downloadUrl: string }> | ApiFailure;
+      if (!response.ok || "error" in body) throw new Error("error" in body ? body.error.message : "素材库下载准备失败。");
+      showNotice(`${body.data.totalAssets} 张素材已开始打包下载。`);
+      window.location.assign(body.data.downloadUrl);
+    } finally {
+      setProductDownloadPending(false);
+    }
+  }
+
   async function handleBatchDelete() {
     if (!selectedIds.size) return;
     if (selectedIds.size > 50) {
@@ -200,8 +304,8 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
   }
 
   const assets = data?.assets.items ?? [];
-  const activeError = error?.queryKey === queryString ? error.message : "";
-  const loading = data?.queryKey !== queryString && !activeError;
+  const activeError = error?.queryKey === dataKey ? error.message : "";
+  const loading = data?.queryKey !== dataKey && !activeError;
   const initialLoading = !data && loading;
   const selectedInResults = assets.filter((asset) => selectedIds.has(asset.id));
   const canUpload = hasAssetPermission(currentUser.role, "upload", { userId: currentUser.id });
@@ -210,12 +314,28 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
   const activeCategory = data?.categories.find((category) => category.id === state.categoryId);
   const activeChannelName = state.channelId === "all" ? "全部渠道" : data?.channels.find((channel) => channel.id === state.channelId)?.name ?? "渠道";
   const totalAssets = data?.channels.reduce((total, channel) => total + channel.assetCount, 0) ?? 0;
+  const activeProduct = state.spu ? data?.products.items.find((product) => product.spu === state.spu) : null;
+  const displayedAssetTotal = state.spu ? data?.assets.total ?? 0 : activeCategory?.assetCount ?? data?.products.items.reduce((total, product) => total + product.assetCount, 0) ?? 0;
+  const displayedProductTotal = state.spu && activeProduct ? 1 : data?.products.total ?? 0;
+  const assetPaginationItems = data ? paginationItems(data.assets.page, data.assets.totalPages) : [];
+  const contextTitle = activeProduct?.spu ?? activeCategory?.name ?? (state.filters.query.trim() ? "搜索结果" : "加载品类");
 
   const toggleAllResults = () => {
     setSelectedIds((current) => {
       const next = new Set(current);
       const allSelected = assets.length > 0 && assets.every((asset) => next.has(asset.id));
       assets.forEach((asset) => allSelected ? next.delete(asset.id) : next.add(asset.id));
+      return next;
+    });
+  };
+
+  const toggleAllProducts = () => {
+    if (!data?.products.items.length) return;
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      const products = data.products.items;
+      const allSelected = products.every((product) => next.has(product.id));
+      products.forEach((product) => allSelected ? next.delete(product.id) : next.add(product.id));
       return next;
     });
   };
@@ -229,7 +349,7 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
     <div className="library-app">
       <LibraryHeader
         query={state.filters.query}
-        onQueryChange={(query) => updateFilters({ ...state.filters, query })}
+        onQueryChange={updateGlobalSearch}
         onUpload={() => {
           const assetGroup = data?.assetGroups.items[0];
           router.push(assetGroup ? `/upload?assetGroupId=${assetGroup.id}` : "/upload");
@@ -237,27 +357,43 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
         currentUser={currentUser}
         roleLabel={roleLabels[currentUser.role]}
         canUpload={canUpload}
+        canAdmin={currentUser.role === "SUPER_ADMIN"}
       />
       <div className="library-body">
-        <ChannelNav channels={data?.channels ?? []} activeChannel={state.channelId} totalCount={totalAssets} onChange={(channelId) => updateUrl({ channelId, categoryId: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
+        <ChannelNav channels={data?.channels ?? []} activeChannel={state.channelId} totalCount={totalAssets} onChange={(channelId) => updateUrl({ channelId, categoryId: undefined, spu: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
         <main className="workspace">
           <section className="context-header" aria-labelledby="library-title">
             <p>当前浏览范围</p>
             <div>
-              <h1 id="library-title">{activeCategory?.name ?? "加载品类"} · {activeChannelName}</h1>
-              <span>{data?.assets.total ?? 0} 张筛选素材 · {data?.assetGroups.total ?? 0} 个素材组</span>
+              <h1 id="library-title">{contextTitle} · {activeChannelName}</h1>
+              <span>{displayedAssetTotal} 张素材 · {displayedProductTotal} 个素材库</span>
             </div>
           </section>
+          <AnnouncementStrip announcements={announcements} />
 
           {initialLoading && <div className="data-state">正在加载数据库素材…</div>}
           {!initialLoading && activeError && <div className="data-state is-error" role="alert">{activeError}</div>}
           {!activeError && data && <>
-            <CategoryCards categories={data.categories} activeCategory={state.categoryId} onChange={(categoryId) => updateUrl({ categoryId, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
-            <FilterBar filters={state.filters} colors={data.filters.colors} onChange={updateFilters} onClear={clearFilters} />
-            <section className="page-section" aria-labelledby="assets-heading">
+            <CategoryCards categories={data.categories} activeCategory={state.categoryId} onChange={(categoryId) => updateUrl({ categoryId, spu: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
+            <ProductLibraryCards
+              products={data.products.items}
+              activeSpu={state.spu}
+              selectedProductIds={selectedProductIds}
+              canDownload={canDownload}
+              downloading={productDownloadPending}
+              onOpen={openProductLibrary}
+              onBack={closeProductLibrary}
+              onToggle={toggleProduct}
+              onToggleAll={toggleAllProducts}
+              onDownloadSelected={() => { void handleProductBatchDownload().catch((downloadError: unknown) => showNotice(downloadError instanceof Error ? downloadError.message : "素材库下载失败。")); }}
+              onDownloadProduct={(productId) => { void handleProductBatchDownload([productId]).catch((downloadError: unknown) => showNotice(downloadError instanceof Error ? downloadError.message : "素材库下载失败。")); }}
+            />
+            {state.spu && <>
+              <FilterBar filters={state.filters} colors={data.filters.colors} onChange={updateFilters} onClear={clearFilters} />
+              <section className="page-section" aria-labelledby="assets-heading">
               <div className="asset-toolbar">
                 <div>
-                  <p>素材结果</p>
+                  <p>二阶层图片素材</p>
                   <h2 id="assets-heading">筛选到 {data.assets.total} 张素材</h2>
                 </div>
                 <div className="asset-actions">
@@ -277,10 +413,15 @@ export function AssetLibrary({ currentUser }: AssetLibraryProps) {
               <AssetGrid assets={assets} columns={columns} selectedIds={selectedIds} onPreview={setPreviewAsset} onToggle={toggleAsset} canEdit={(asset) => hasAssetPermission(currentUser.role, "edit", { userId: currentUser.id, uploadedById: asset.uploadedById ?? undefined })} canDelete={(asset) => hasAssetPermission(currentUser.role, "delete", { userId: currentUser.id, uploadedById: asset.uploadedById ?? undefined })} onEdit={setPreviewAsset} onDelete={(asset) => { void handleDelete(asset).catch((deleteError: unknown) => showNotice(deleteError instanceof Error ? deleteError.message : "删除失败。")); }} />
               {data.assets.totalPages > 1 && <nav className="pagination" aria-label="素材分页">
                 <button type="button" disabled={data.assets.page <= 1} onClick={() => updateUrl({ page: String(data.assets.page - 1) })}><ChevronLeft aria-hidden="true" />上一页</button>
-                <span>第 {data.assets.page} / {data.assets.totalPages} 页</span>
+                <div className="pagination-pages" aria-label={`第 ${data.assets.page} / ${data.assets.totalPages} 页`}>
+                  {assetPaginationItems.map((item, index) => typeof item === "number"
+                    ? <button className="page-number" type="button" key={item} aria-current={item === data.assets.page ? "page" : undefined} disabled={item === data.assets.page} onClick={() => updateUrl({ page: String(item) })}>{item}</button>
+                    : <span className="page-ellipsis" key={`ellipsis-${index}`} aria-hidden="true">…</span>)}
+                </div>
                 <button type="button" disabled={data.assets.page >= data.assets.totalPages} onClick={() => updateUrl({ page: String(data.assets.page + 1) })}>下一页<ChevronRight aria-hidden="true" /></button>
               </nav>}
-            </section>
+              </section>
+            </>}
           </>}
         </main>
       </div>

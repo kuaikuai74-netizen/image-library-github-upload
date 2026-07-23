@@ -7,13 +7,10 @@ import { isReusableFileObject } from "@/lib/assets/file-object";
 import { ImageValidationError, verifyImageBuffer } from "@/lib/assets/image-validation";
 import { getStorageService } from "@/lib/storage";
 import { createAssetStorageKeys } from "@/lib/storage/storage-keys";
+import { UploadError } from "@/lib/assets/upload-errors";
 import type { UploadMetadata } from "@/lib/assets/upload-schema";
 
-export class UploadError extends Error {
-  constructor(public readonly code: string, message: string, public readonly status = 400) {
-    super(message);
-  }
-}
+export { UploadError };
 
 export type UploadFileInput = {
   file: File;

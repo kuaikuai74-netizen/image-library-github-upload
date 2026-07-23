@@ -1,6 +1,7 @@
 "use client";
 
-import { Images, LogOut, Search, Upload, UserRound } from "lucide-react";
+import { BookOpen, Images, LogOut, Search, Shield, Upload, UserRound } from "lucide-react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -13,9 +14,10 @@ type LibraryHeaderProps = {
   currentUser: LibraryUser;
   roleLabel: string;
   canUpload: boolean;
+  canAdmin: boolean;
 };
 
-export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, roleLabel, canUpload }: LibraryHeaderProps) {
+export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, roleLabel, canUpload, canAdmin }: LibraryHeaderProps) {
   const queryTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
 
       <div className="header-actions">
         <ThemeToggle />
+        <Link className="admin-link-button" href="/docs"><BookOpen aria-hidden="true" /><span>使用文档</span></Link>
+        {canAdmin && <Link className="admin-link-button" href="/admin"><Shield aria-hidden="true" /><span>管理后台</span></Link>}
         {canUpload && <button className="upload-button" type="button" onClick={onUpload}>
           <Upload aria-hidden="true" />
           <span>上传素材</span>

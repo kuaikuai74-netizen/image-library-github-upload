@@ -3,12 +3,12 @@ import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { requireAssetPermission } from "@/lib/auth/server";
 import { UploadError, uploadFiles } from "@/lib/assets/upload-service";
-import { uploadRequestSchema } from "@/lib/assets/upload-schema";
+import { parseUploadMetadataField, uploadRequestSchema } from "@/lib/assets/upload-schema";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const metadata = JSON.parse(String(formData.get("metadata") ?? "[]"));
+    const metadata = parseUploadMetadataField(formData.get("metadata"));
     const parsed = uploadRequestSchema.parse({
       assetGroupId: formData.get("assetGroupId"),
       idempotencyKey: formData.get("idempotencyKey"),

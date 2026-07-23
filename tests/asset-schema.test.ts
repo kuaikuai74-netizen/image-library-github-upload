@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assetIdsSchema, assetMutationSchema } from "../lib/assets/asset-schema";
+import { assetIdsSchema, assetMutationSchema, productBatchDownloadSchema } from "../lib/assets/asset-schema";
 
 describe("asset management schemas", () => {
   it("accepts editable asset metadata and a destination group", () => {
@@ -10,5 +10,15 @@ describe("asset management schemas", () => {
   it("requires at least one change and deduplicates batch item ids", () => {
     expect(() => assetMutationSchema.parse({})).toThrow();
     expect(assetIdsSchema.parse({ assetIds: ["asset-amazon-tables-1", "asset-amazon-tables-1", "asset-amazon-tables-2"] }).assetIds).toEqual(["asset-amazon-tables-1", "asset-amazon-tables-2"]);
+  });
+
+  it("deduplicates selected product libraries for batch downloads", () => {
+    const parsed = productBatchDownloadSchema.parse({
+      productIds: ["product-0501", "product-0501", "product-0601"],
+      channelId: "channel-amazon",
+      categoryId: "category-casegoods",
+    });
+
+    expect(parsed.productIds).toEqual(["product-0501", "product-0601"]);
   });
 });

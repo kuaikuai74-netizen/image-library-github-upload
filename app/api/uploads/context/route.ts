@@ -3,18 +3,13 @@ import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { requireAssetPermission } from "@/lib/auth/server";
 import { ensureAssetGroup } from "@/lib/assets/asset-group-service";
-import { contextUploadRequestSchema } from "@/lib/assets/upload-schema";
+import { contextUploadRequestSchema, parseUploadMetadataField } from "@/lib/assets/upload-schema";
 import { UploadError, uploadFiles } from "@/lib/assets/upload-service";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    let metadata: unknown;
-    try {
-      metadata = JSON.parse(String(formData.get("metadata") ?? "[]"));
-    } catch {
-      throw new UploadError("INVALID_UPLOAD_METADATA", "上传元数据无效。");
-    }
+    const metadata = parseUploadMetadataField(formData.get("metadata"));
     const parsed = contextUploadRequestSchema.parse({
       channelId: formData.get("channelId"),
       categoryId: formData.get("categoryId"),

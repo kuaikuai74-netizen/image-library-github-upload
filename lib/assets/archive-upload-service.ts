@@ -1,12 +1,13 @@
 import type { Readable } from "node:stream";
 import * as yauzl from "yauzl";
-import { archiveCountryIdempotencyKey, classifyArchiveEntry, compareArchivePaths, type ArchiveCountryCode } from "@/lib/assets/archive-routes";
+import { archiveCountryIdempotencyKey, archivePathCandidates, classifyArchiveEntry, compareArchivePaths, type ArchiveCountryCode } from "@/lib/assets/archive-routes";
 import type { ArchiveUploadRequest } from "@/lib/assets/archive-upload-schema";
 import { ensureAssetGroup } from "@/lib/assets/asset-group-service";
 import { maximumUploadBytes, UploadError, uploadFiles, type UploadFileInput } from "@/lib/assets/upload-service";
 
 type ArchiveImageEntry = { countryCode: ArchiveCountryCode; other: string | null; entry: yauzl.Entry; filename: string; path: string };
 type ArchiveSkippedEntry = { path: string; reason: string };
+type RawNamedZipEntry = yauzl.Entry & { fileNameRaw?: Buffer };
 
 export type ArchiveUploadCountryResult = {
   countryCode: ArchiveCountryCode;
@@ -101,7 +102,7 @@ function validateArchive(archive: File) {
 
 function openZipArchive(buffer: Buffer) {
   return new Promise<yauzl.ZipFile>((resolve, reject) => {
-    yauzl.fromBuffer(buffer, { autoClose: false, lazyEntries: true, strictFileNames: true, validateEntrySizes: true }, (error, zipFile) => {
+    yauzl.fromBuffer(buffer, { autoClose: false, lazyEntries: true, strictFileNames: false, validateEntrySizes: true }, (error, zipFile) => {
       if (error) {
         reject(new UploadError("INVALID_ARCHIVE", "无法读取 ZIP 压缩包。"));
         return;
@@ -147,7 +148,7 @@ function listArchiveEntries(zipFile: yauzl.ZipFile) {
         return;
       }
 
-      const classification = classifyArchiveEntry(entry.fileName);
+      const classification = classifyArchiveEntryFromZipEntry(entry);
       if (classification.kind === "image") {
         images.push({ countryCode: classification.countryCode, other: classification.other, entry, filename: classification.filename, path: classification.path });
       } else if (classification.reason !== "目录" && classification.reason !== "系统文件") {
@@ -161,6 +162,13 @@ function listArchiveEntries(zipFile: yauzl.ZipFile) {
     zipFile.once("error", onError);
     zipFile.readEntry();
   });
+}
+
+function classifyArchiveEntryFromZipEntry(entry: yauzl.Entry) {
+  const rawEntry = entry as RawNamedZipEntry;
+  const candidates = archivePathCandidates(entry.fileName, rawEntry.fileNameRaw);
+  const classifications = candidates.map(classifyArchiveEntry);
+  return classifications.find((classification) => classification.kind === "image") ?? classifications[0];
 }
 
 function groupEntriesByCountry(entries: ArchiveImageEntry[]) {

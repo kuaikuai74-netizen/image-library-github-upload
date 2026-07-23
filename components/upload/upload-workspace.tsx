@@ -4,7 +4,7 @@ import { ArrowLeft, FileImage, LoaderCircle, Plus, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
-import type { ApiFailure, ApiSuccess, AssetGroupListItem, CategoryListItem, ChannelListItem, Paginated } from "@/lib/library/contracts";
+import type { ApiFailure, ApiSuccess, AssetGroupListItem, AssetGroupPage, CategoryListItem, ChannelListItem } from "@/lib/library/contracts";
 import { assetTypeOptions, countryName, countryOptions } from "@/lib/library/countries";
 
 type UploadRow = {
@@ -56,7 +56,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetchData<Paginated<AssetGroupListItem>>("/api/asset-groups?page=1&pageSize=100", controller.signal),
+      fetchData<AssetGroupPage>("/api/asset-groups?page=1&pageSize=100", controller.signal),
       fetchData<ChannelListItem[]>("/api/channels", controller.signal),
       fetchData<CategoryListItem[]>("/api/categories", controller.signal),
     ])
@@ -216,8 +216,8 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
                 {countryOptions.map((country) => <option value={country.code} key={country.code}>{country.name}</option>)}
               </select>}
           </label>
-          <label><span>素材组</span><select value={context.assetType} onChange={(event) => updateContext({ assetType: event.target.value })} disabled={submitting}>
-            <option value="">请选择素材组</option>
+          <label><span>图片类型</span><select value={context.assetType} onChange={(event) => updateContext({ assetType: event.target.value })} disabled={submitting}>
+            <option value="">请选择图片类型</option>
             {assetTypeOptions.map((assetType) => <option value={assetType} key={assetType}>{assetType}</option>)}
           </select></label>
           <label><span>其他</span>{uploadMode === "archive"
@@ -230,8 +230,8 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
           {uploadMode === "archive"
             ? "ZIP 将按语言目录自动识别国家，并读取国家目录后的颜色、英标或欧标等“其他”目录。"
             : hasCompleteContext
-              ? <>上传时将自动创建或复用素材组：国家：{countryName(context.countryCode)}　SPU：{context.spu.trim()}　素材组：{context.assetType}　其他：{context.other.trim() || "未指定"}</>
-              : "请选择渠道、品类、国家和素材组，并输入 SPU。"}
+              ? <>上传时将自动创建或复用素材记录：国家：{countryName(context.countryCode)}　SPU：{context.spu.trim()}　图片类型：{context.assetType}　其他：{context.other.trim() || "未指定"}</>
+              : "请选择渠道、品类、国家和图片类型，并输入 SPU。"}
         </div>
 
         {uploadMode === "images" ? <>

@@ -3,10 +3,22 @@ import type { Archiver } from "archiver";
 import { PassThrough, Readable } from "node:stream";
 import { getStorageService } from "@/lib/storage";
 
-type DownloadableAsset = { id: string; filename: string; fileObject: { originalStorageKey: string } };
+export type DownloadableAsset = { id: string; filename: string; archivePath?: string[]; fileObject: { originalStorageKey: string } };
 
 function safeDownloadFilename(filename: string) {
   return filename.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").slice(0, 180) || "asset";
+}
+
+function safeArchiveName(asset: DownloadableAsset) {
+  if (!asset.archivePath?.length) return safeDownloadFilename(asset.filename);
+  const segments = [...asset.archivePath, asset.filename].map(safeDownloadFilename).filter(Boolean);
+  return segments.join("/") || safeDownloadFilename(asset.filename);
+}
+
+function withAssetId(asset: DownloadableAsset, archiveName: string) {
+  const segments = archiveName.split("/");
+  const basename = segments.pop() ?? safeDownloadFilename(asset.filename);
+  return [...segments, `${asset.id}-${basename}`].join("/");
 }
 
 export function downloadHeaders(filename: string, contentType: string) {
@@ -37,8 +49,8 @@ async function appendArchive(archive: Archiver, assets: DownloadableAsset[]) {
       manifest.push({ assetId: asset.id, filename: asset.filename, status: "FAILED" });
       continue;
     }
-    let filename = safeDownloadFilename(asset.filename);
-    if (usedFilenames.has(filename)) filename = `${asset.id}-${filename}`;
+    let filename = safeArchiveName(asset);
+    if (usedFilenames.has(filename)) filename = withAssetId(asset, filename);
     usedFilenames.add(filename);
     archive.append(object.body, { name: filename });
     manifest.push({ assetId: asset.id, filename, status: "READY" });

@@ -1,6 +1,6 @@
 import { ZodError, type ZodType } from "zod";
 import { AuthorizationError } from "@/lib/auth/server";
-import { UploadError } from "@/lib/assets/upload-service";
+import { UploadError } from "@/lib/assets/upload-errors";
 import { failure } from "@/lib/api/response";
 
 export function parseQuery<T>(schema: ZodType<T>, searchParams: URLSearchParams) {

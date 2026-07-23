@@ -14,13 +14,13 @@ Status: completed for the static library page. Next.js, TypeScript strict mode, 
 
 ## Phase 2: Authentication and Metadata
 
-Status: authentication, authorization and database-backed library browsing are completed. Auth.js Credentials login, Prisma roles and library relations, protected paginated query APIs, URL-backed filters, development seed data, and unit tests are in place. Asset metadata mutations are implemented in application code and await the same PostgreSQL-backed integration verification as library operations.
+Status: authentication, authorization and database-backed library browsing are completed. Auth.js Credentials login, Prisma roles and library relations, protected paginated query APIs, URL-backed filters, development seed data, and unit tests are in place. The browsing UI now treats each SPU as the business-facing asset library layer before showing second-level image assets. Asset metadata mutations are implemented in application code and await the same PostgreSQL-backed integration verification as library operations.
 
 **Acceptance:** unauthenticated requests cannot access protected routes; role checks are verified on UI and server; metadata persists after restart and validation errors are consistent.
 
 ## Phase 3: Local File Storage
 
-Status: completed in the application code, pending PostgreSQL-backed integration verification. `StorageService` and `LocalStorageService` isolate local filesystem access. Uploads use an idempotency key, a temporary directory, Sharp MIME/dimension validation, SHA-256 checksums, and WebP thumbnail/preview derivatives. ZIP uploads map the approved language folders to country groups, process groups sequentially, and create or reuse the Product and each matching country asset group from the upload context. Active assets are served only through authenticated content endpoints; deletion failures are recorded as `DELETE_FAILED`.
+Status: completed in the application code, pending PostgreSQL-backed integration verification. `StorageService` and `LocalStorageService` isolate local filesystem access. Uploads use an idempotency key, a temporary directory, Sharp MIME/dimension validation, SHA-256 checksums, and WebP thumbnail/preview derivatives. ZIP uploads map the approved language folders and common country-folder variants to country groups, recover GBK-encoded Chinese ZIP paths where available, process groups sequentially, and create or reuse the Product and each matching country asset group from the upload context. Active assets are served only through authenticated content endpoints; deletion failures are recorded as `DELETE_FAILED`.
 
 **Acceptance:** uploaded originals survive restart, retain bytes and MIME type, have an `assetGroupId`, generate thumbnails, and can be read without revealing absolute paths. Verify these against configured PostgreSQL before promoting the phase.
 
@@ -30,9 +30,17 @@ Status: completed in application code, pending PostgreSQL-backed integration ver
 
 **Acceptance:** large result sets paginate correctly; batch jobs report individual errors; audit records exist for asset changes and downloads; soft deletion never deletes a referenced file object; automated tests cover authorization and storage failures.
 
+## Phase 4.5: Super Admin Operations
+
+Status: operational console and user-facing content consumption expanded. `SUPER_ADMIN` users can open `/admin` from the library header, inspect expanded dashboard metrics and distribution panels, create/edit/enable/disable users, reset passwords, review user and role overview, recent download audit records, recent upload requests, publish/edit announcements, and create/edit documentation pages. Announcement and documentation content is persisted through Prisma models with role-based visibility metadata, publication status, announcement timing, pinning, read-count support, and audit logs. Permitted users can now see published announcements on the library page, mark announcements as read, and read published role-visible documents at `/docs`. The next acceptance work is richer download batch reporting and NAS health telemetry.
+
+**Acceptance:** super admin routes are inaccessible to non-admin users; download audit records answer who downloaded what and when; user, announcement, and documentation mutations are audited; announcement and documentation publishing has role-based visibility; published content is exposed only to permitted users; announcement read state persists per user.
+
 ## Phase 5: LAN Deployment Readiness
 
 Status: in progress. The production migration command and deployment, backup, recovery, and verification runbook are documented. The remaining acceptance work is a rehearsal against an isolated configured PostgreSQL deployment.
+
+Local rehearsal can use `npm run clear:assets` to remove uploaded asset metadata and referenced local storage objects while preserving users, channels, and categories.
 
 **Acceptance:** a clean machine can deploy from documentation; database backup and file restore are rehearsed; no secret or absolute storage path is committed.
 

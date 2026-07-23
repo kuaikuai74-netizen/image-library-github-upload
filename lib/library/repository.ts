@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
-import type { AssetFilters, AssetGroupListItem, CategoryListItem, ChannelListItem, LibraryAsset, Paginated, ProductListItem } from "@/lib/library/contracts";
+import type { AssetFilters, AssetGroupPage, CategoryListItem, ChannelListItem, LibraryAsset, Paginated, ProductListItem } from "@/lib/library/contracts";
 import type { AssetQuery } from "@/lib/library/query-schema";
 import { assetOrderBy } from "@/lib/library/asset-order";
+import { summarizeProductGroupsByCategory } from "@/lib/library/product-groups";
 import { prisma } from "@/lib/prisma";
 
 const assetInclude = {
@@ -18,7 +19,7 @@ const assetInclude = {
 } satisfies Prisma.AssetInclude;
 
 function groupWhere(query: AssetQuery): Prisma.AssetGroupWhereInput {
-  const productFilter: Prisma.ProductWhereInput | undefined = query.spu ? { spu: { contains: query.spu, mode: "insensitive" } } : undefined;
+  const productFilter: Prisma.ProductWhereInput | undefined = query.spu ? { spu: { equals: query.spu, mode: "insensitive" } } : undefined;
   return {
     channelId: query.channelId,
     categoryId: query.categoryId,
@@ -86,13 +87,9 @@ export async function listChannels(): Promise<ChannelListItem[]> {
 export async function listCategories(channelId?: string): Promise<CategoryListItem[]> {
   const groups = await prisma.assetGroup.findMany({
     where: channelId ? { channelId } : undefined,
-    select: { categoryId: true, _count: { select: { assets: { where: { status: "ACTIVE" } } } } },
+    select: { categoryId: true, productId: true, _count: { select: { assets: { where: { status: "ACTIVE" } } } } },
   });
-  const totals = new Map<string, { assetGroupCount: number; assetCount: number }>();
-  groups.forEach((group) => {
-    const current = totals.get(group.categoryId) ?? { assetGroupCount: 0, assetCount: 0 };
-    totals.set(group.categoryId, { assetGroupCount: current.assetGroupCount + 1, assetCount: current.assetCount + group._count.assets });
-  });
+  const totals = summarizeProductGroupsByCategory(groups.map((group) => ({ categoryId: group.categoryId, productId: group.productId, assetCount: group._count.assets })));
   const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
   return categories.map((category) => ({
     id: category.id,
@@ -103,21 +100,70 @@ export async function listCategories(channelId?: string): Promise<CategoryListIt
   }));
 }
 
-export async function listProducts(query: Pick<AssetQuery, "categoryId" | "spu" | "q" | "page" | "pageSize">): Promise<Paginated<ProductListItem>> {
+export async function listProducts(query: Pick<AssetQuery, "channelId" | "categoryId" | "spu" | "q" | "page" | "pageSize">): Promise<Paginated<ProductListItem>> {
+  const groupFilter: Prisma.AssetGroupWhereInput = {
+    channelId: query.channelId,
+    categoryId: query.categoryId,
+    assets: { some: { status: "ACTIVE" } },
+  };
+  const searchGroupFilter: Prisma.AssetGroupWhereInput = {
+    channelId: query.channelId,
+    categoryId: query.categoryId,
+    assets: { some: { status: "ACTIVE", OR: [{ filename: { contains: query.q, mode: "insensitive" } }, { sku: { contains: query.q, mode: "insensitive" } }] } },
+  };
   const where: Prisma.ProductWhereInput = {
     categoryId: query.categoryId,
-    ...(query.spu || query.q ? { OR: [{ spu: { contains: query.spu ?? query.q, mode: "insensitive" } }, { name: { contains: query.q ?? query.spu, mode: "insensitive" } }] } : {}),
+    assetGroups: { some: groupFilter },
+    ...(query.spu ? { spu: { equals: query.spu, mode: "insensitive" } } : {}),
+    ...(!query.spu && query.q ? { OR: [{ spu: { contains: query.q, mode: "insensitive" } }, { name: { contains: query.q, mode: "insensitive" } }, { category: { is: { name: { contains: query.q, mode: "insensitive" } } } }, { assetGroups: { some: searchGroupFilter } }] } : {}),
   };
   const [items, total] = await prisma.$transaction([
-    prisma.product.findMany({ where, orderBy: { spu: "asc" }, skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
+    prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { previewSlot: true } },
+        assetGroups: {
+          where: groupFilter,
+          select: {
+            _count: { select: { assets: { where: { status: "ACTIVE" } } } },
+            assets: {
+              where: { status: "ACTIVE" },
+              select: { id: true, fileObject: { select: { thumbnailStorageKey: true } } },
+              orderBy: { sortOrder: "asc" },
+              take: 1,
+            },
+          },
+        },
+      },
+      orderBy: { spu: "asc" },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
     prisma.product.count({ where }),
   ]);
-  return { items, page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+  return {
+    items: items.map((product) => {
+      const firstAsset = product.assetGroups.flatMap((group) => group.assets).find((asset) => asset.fileObject.thumbnailStorageKey);
+      return {
+        id: product.id,
+        spu: product.spu,
+        name: product.name,
+        categoryId: product.categoryId,
+        assetCount: product.assetGroups.reduce((sum, group) => sum + group._count.assets, 0),
+        thumbnailUrl: firstAsset ? `/api/assets/${firstAsset.id}/content?variant=thumbnail` : null,
+        previewSlot: product.category.previewSlot,
+      };
+    }),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+  };
 }
 
-export async function listAssetGroups(query: Pick<AssetQuery, "channelId" | "categoryId" | "countryCode" | "assetType" | "spu" | "page" | "pageSize">): Promise<Paginated<AssetGroupListItem>> {
+export async function listAssetGroups(query: Pick<AssetQuery, "channelId" | "categoryId" | "countryCode" | "assetType" | "spu" | "page" | "pageSize">): Promise<AssetGroupPage> {
   const where = groupWhere({ ...query, color: undefined, filename: undefined, q: undefined });
-  const [items, total] = await prisma.$transaction([
+  const [items, total, productGroups] = await prisma.$transaction([
     prisma.assetGroup.findMany({
       where,
       include: { channel: { select: { name: true } }, category: { select: { name: true } }, product: { select: { id: true, spu: true, name: true, categoryId: true } }, _count: { select: { assets: { where: { status: "ACTIVE" } } } } },
@@ -126,6 +172,11 @@ export async function listAssetGroups(query: Pick<AssetQuery, "channelId" | "cat
       take: query.pageSize,
     }),
     prisma.assetGroup.count({ where }),
+    prisma.assetGroup.findMany({
+      where: { ...where, assets: { some: { status: "ACTIVE" } } },
+      distinct: ["productId"],
+      select: { productId: true },
+    }),
   ]);
   return {
     items: items.map((group) => ({
@@ -143,6 +194,7 @@ export async function listAssetGroups(query: Pick<AssetQuery, "channelId" | "cat
     pageSize: query.pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+    productGroupTotal: productGroups.length,
   };
 }
 
@@ -161,12 +213,12 @@ export async function listAssets(query: AssetQuery): Promise<Paginated<LibraryAs
   return { items: items.map(mapAsset), page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
 }
 
-export async function listAssetFilters(query: Pick<AssetQuery, "channelId" | "categoryId">): Promise<AssetFilters> {
-  const group = groupWhere({ ...query, countryCode: undefined, assetType: undefined, color: undefined, spu: undefined, filename: undefined, q: undefined, page: 1, pageSize: 1 });
+export async function listAssetFilters(query: Pick<AssetQuery, "channelId" | "categoryId" | "spu">): Promise<AssetFilters> {
+  const scopedGroup = groupWhere({ ...query, countryCode: undefined, assetType: undefined, color: undefined, filename: undefined, q: undefined, page: 1, pageSize: 1 });
   const [countries, types, colors] = await prisma.$transaction([
-    prisma.assetGroup.findMany({ where: group, distinct: ["countryCode"], select: { countryCode: true }, take: 100 }),
-    prisma.asset.findMany({ where: { status: "ACTIVE", assetGroup: { is: group } }, distinct: ["assetType"], select: { assetType: true }, take: 100 }),
-    prisma.asset.findMany({ where: { status: "ACTIVE", assetGroup: { is: group } }, distinct: ["color"], select: { color: true }, take: 100 }),
+    prisma.assetGroup.findMany({ where: scopedGroup, distinct: ["countryCode"], select: { countryCode: true }, take: 100 }),
+    prisma.asset.findMany({ where: { status: "ACTIVE", assetGroup: { is: scopedGroup } }, distinct: ["assetType"], select: { assetType: true }, take: 100 }),
+    prisma.asset.findMany({ where: { status: "ACTIVE", assetGroup: { is: scopedGroup } }, distinct: ["color"], select: { color: true }, take: 100 }),
   ]);
   return {
     countries: countries.map((item) => item.countryCode).sort(),

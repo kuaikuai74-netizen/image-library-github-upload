@@ -32,7 +32,7 @@ export function CategoryCards({ categories, activeCategory, onChange }: Category
               <span className={`category-thumb slot-${category.previewSlot}`} aria-hidden="true" />
               <span>
                 <strong>{category.name}</strong>
-                <small>{category.assetGroupCount} 个素材组 · {category.assetCount} 张</small>
+                <small>{category.assetGroupCount} 个素材库 · {category.assetCount} 张</small>
               </span>
             </button>
           );

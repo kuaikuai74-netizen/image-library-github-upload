@@ -51,6 +51,9 @@ The browser communicates only with authenticated application endpoints. It never
 
 Every `Asset` is created with an `assetGroupId`. The group, product, channel, country, image type, and related SKU references are database relationships, not filenames or browser state.
 
+The browser presents `Product`/SPU as the business-facing asset library layer. A single SPU counts as one visible asset library in category totals, even when PostgreSQL stores several `AssetGroup` rows for different countries or image types. Users first choose the SPU library, then filter and manage the second-level image assets inside it.
+The first-level SPU library view supports selecting one or multiple libraries and requesting one server-generated ZIP containing every active original image in those libraries. The archive groups files by country, image type, and the upload-context `other` value stored in the asset color field, while downloads still pass through authenticated server routes and `StorageService`.
+
 `AssetGroup` is uniquely identified by channel, product, country code, and image type. `Asset` indexes its group, uploader, color, SKU, and filename. The list API applies filters in PostgreSQL and returns a bounded page rather than materializing the entire library in the browser.
 
 ## Security

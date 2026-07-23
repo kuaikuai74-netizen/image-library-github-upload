@@ -8,6 +8,8 @@
 
 当前阶段已具备账号密码登录、角色权限基础、Prisma 素材数据模型和数据库查询 API。页面筛选、统计和分页从数据库读取；上传通过服务端 `StorageService` 写入本地目录，并生成缩略图和预览图。暂不接入绿联 NAS。
 
+业务展示口径中，`1 个 SPU = 1 个素材组`。同一 SPU 下按国家、图片类型或其他字段拆出的多条内部存储记录，不会在品类卡片和浏览范围统计中重复计算为多个素材组。
+
 ## 目标技术栈
 
 - Next.js + TypeScript
@@ -28,6 +30,16 @@ npm run dev
 
 访问 `http://localhost:3000` 登录并查看素材库。`index.html` 只用于查看历史设计原型。
 
+超级管理员登录后，顶部会出现“管理后台”入口，可访问 `/admin` 查看总览看板、用户与权限、下载记录、上传任务、公告管理、文档中心和 NAS 管理入口。当前后台已支持新建用户、编辑用户、启用/禁用用户、重置密码、发布/编辑公告，以及新建/编辑使用文档。普通用户可在素材库首页查看有权限的已发布公告并标记已读，也可通过顶部“使用文档”进入 `/docs` 阅读有权限的已发布文档。
+
+如果只是稳定预览当前页面，使用：
+
+```bash
+npm run preview
+```
+
+该命令会先重新构建，再用生产服务启动 `http://localhost:3000`，避免开发服务器文件监听异常或旧缓存导致页面样式不一致。
+
 ## 环境变量
 
 正式应用初始化后，从 `.env.example` 创建本地 `.env`。不要提交 `.env`、真实密钥、数据库密码或 NAS 凭据。
@@ -40,6 +52,14 @@ npm run db:seed
 ```
 
 seed 使用 `DEV_ADMIN_EMAIL`、`DEV_ADMIN_USERNAME` 和 `DEV_ADMIN_PASSWORD` 创建或更新 `SUPER_ADMIN` 账号；不会在仓库中保存明文密码。
+
+真实素材本地测试前，可以清空 seed 或临时上传的素材数据：
+
+```bash
+npm run clear:assets
+```
+
+该命令保留登录账号、渠道和品类，只删除商品、素材组、素材、文件对象、上传请求、审计日志，以及 `LOCAL_STORAGE_ROOT` 下应用使用的素材目录。
 
 ## 部署
 
@@ -86,11 +106,19 @@ npm run e2e
 
 - `GET /api/channels`
 - `GET /api/categories?channelId=`
-- `GET /api/products?categoryId=&spu=&page=&pageSize=`
+- `GET /api/products?channelId=&categoryId=&spu=&q=&page=&pageSize=`
+- `POST /api/products/batch-download` 按所选 SPU 素材库准备 ZIP 下载；随后通过返回的受保护 URL 下载压缩包。
 - `GET /api/asset-groups?channelId=&categoryId=&countryCode=&assetType=&page=&pageSize=`
 - `GET /api/assets?channelId=&categoryId=&countryCode=&assetType=&color=&spu=&filename=&q=&page=&pageSize=`
 
 素材查询默认返回 24 条，`pageSize` 最大为 100；响应使用统一的 `{ data }` 或 `{ error: { code, message } }` 结构。
+
+## 公告与文档
+
+- 素材库首页会展示当前用户角色可见、状态为 `PUBLISHED`、且处于有效时间范围内的公告。
+- 用户可通过 `POST /api/announcements/:announcementId/read` 标记公告已读；后台公告列表会统计已读数量。
+- `/docs` 展示当前用户角色可见且状态为 `PUBLISHED` 的文档，并按文档分类分组。
+- `visibilityRoles = []` 表示全员可见；指定角色后仅对应角色可见。
 
 ## 本地上传与文件访问
 
@@ -111,6 +139,37 @@ npm run e2e
 - 删除为软删除。`Asset` 与物理 `FileObject` 分离，一个文件对象可被多个有效素材引用；删除任何一个素材都不会删除物理文件。
 - 当最后一个有效素材被软删除时，文件对象只会标记为待清理。恢复素材会取消该标记。物理清理必须由后续受控维护任务执行，且仅可处理无 `ACTIVE` 引用的文件对象。
 - 单张下载经 `GET /api/assets/:assetId/download` 返回受保护的下载流。批量下载先调用 `POST /api/assets/batch-download` 获得逐项状态，再从受保护 URL 下载 ZIP；ZIP 附带 `manifest.json`。
+- 一级素材库页面可下载单个或多个 SPU 素材库，并通过 `POST /api/products/batch-download` 将所选素材库中的全部有效原图打包为 ZIP。ZIP 内按 `国家/图片类型/其他/文件名` 分目录，其中“其他”来自上传上下文中的其他目录或颜色字段。
+
+## 管理后台
+
+`/admin` 仅允许 `SUPER_ADMIN` 访问。当前版本复用现有用户、素材、上传请求和审计日志数据，并新增公告与文档内容表，提供管理视图和基础运营能力：
+
+- 总览看板：素材数、素材库数、活跃用户、今日新增、今日下载、存储占用、待清理文件、已发布公告/文档、角色分布、上传状态、图片类型、品类、渠道、公告状态和文档状态。
+- 用户与权限：最近用户、角色、状态、上传数量和审计操作数量，并可新建、编辑、启用/禁用用户和重置密码。
+- 下载记录：用户、时间、下载类型、素材、SPU、品类和渠道。
+- 上传任务：上传批次、上传人、状态、SPU、品类、渠道和素材数。
+- 公告管理：支持发布和编辑公告，包含类型、发布状态、角色可见范围、置顶、有效时间和已读统计。
+- 文档中心：支持新建和编辑 Markdown 风格使用文档，包含 slug、分类、发布状态、角色可见范围和排序。
+- 存储与 NAS：当前展示本地存储驱动、存储占用和待清理文件；NAS 健康检查、容量、读写延迟和迁移 dry-run 仍在后续阶段。
+
+用户管理、公告和文档操作会写入 `AuditLog`。相关迁移包括 `20260723003000_admin_user_audit_actions` 和 `20260723004500_announcements_documents`。部署包含该功能的版本前，需要运行 `npm run db:deploy`。
+
+## 管理后台 API
+
+以下接口仅允许 `SUPER_ADMIN` 使用，响应保持统一 `{ data }` 或 `{ error }` 结构：
+
+- `POST /api/admin/users` 新建用户。
+- `PATCH /api/admin/users/:userId` 修改用户资料、角色或状态。
+- `POST /api/admin/users/:userId/reset-password` 重置用户密码。
+- `GET /api/admin/announcements` 查看最近公告。
+- `POST /api/admin/announcements` 发布公告。
+- `PATCH /api/admin/announcements/:announcementId` 编辑公告。
+- `GET /api/announcements` 查看当前用户可见公告。
+- `POST /api/announcements/:announcementId/read` 标记当前用户公告已读。
+- `GET /api/admin/documents` 查看文档列表。
+- `POST /api/admin/documents` 新建文档。
+- `PATCH /api/admin/documents/:documentId` 编辑文档。
 
 ## 计划中的目录
 

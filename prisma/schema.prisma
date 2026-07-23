@@ -57,6 +57,27 @@ enum AuditAction {
   ASSET_RESTORED
   ASSET_DOWNLOADED
   BATCH_DOWNLOAD_REQUESTED
+  USER_CREATED
+  USER_UPDATED
+  USER_STATUS_CHANGED
+  USER_PASSWORD_RESET
+  ANNOUNCEMENT_CREATED
+  ANNOUNCEMENT_UPDATED
+  DOCUMENT_CREATED
+  DOCUMENT_UPDATED
+}
+
+enum AnnouncementType {
+  INFO
+  MAINTENANCE
+  POLICY
+  ALERT
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 model User {
@@ -73,6 +94,9 @@ model User {
   deletedAssets  Asset[]     @relation("AssetDeletedBy")
   uploadRequests UploadRequest[]
   auditLogs      AuditLog[]
+  announcements  Announcement[]  @relation("AnnouncementCreatedBy")
+  announcementReads AnnouncementRead[]
+  documentPages  DocumentPage[]  @relation("DocumentPageCreatedBy")
 
   @@index([status])
   @@index([role])
@@ -224,4 +248,54 @@ model UploadRequest {
 
   @@index([assetGroupId, createdAt])
   @@index([uploaderId, createdAt])
+}
+
+model Announcement {
+  id              String             @id @default(cuid())
+  title           String             @db.VarChar(160)
+  body            String
+  type            AnnouncementType   @default(INFO)
+  status          ContentStatus      @default(DRAFT)
+  visibilityRoles String[]           @default([])
+  pinned          Boolean            @default(false)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdById     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  createdBy       User?              @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reads           AnnouncementRead[]
+
+  @@index([status, pinned, createdAt])
+  @@index([createdById, createdAt])
+}
+
+model AnnouncementRead {
+  id             String       @id @default(cuid())
+  announcementId String
+  userId         String
+  readAt         DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId, readAt])
+}
+
+model DocumentPage {
+  id              String        @id @default(cuid())
+  slug            String        @unique @db.VarChar(120)
+  title           String        @db.VarChar(160)
+  body            String
+  category        String        @db.VarChar(80)
+  status          ContentStatus @default(DRAFT)
+  visibilityRoles String[]      @default([])
+  sortOrder       Int           @default(0)
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  createdBy       User?         @relation("DocumentPageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status, category, sortOrder])
+  @@index([createdById, createdAt])
 }

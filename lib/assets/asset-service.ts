@@ -1,6 +1,8 @@
 import type { Prisma, UserRole } from "@prisma/client";
+import { countryName } from "@/lib/library/countries";
 import { prisma } from "@/lib/prisma";
 import { UploadError } from "@/lib/assets/upload-service";
+import type { DownloadableAsset } from "@/lib/assets/download-service";
 import type { AssetMutation } from "@/lib/assets/asset-schema";
 
 const assetDetailsInclude = {
@@ -121,4 +123,40 @@ export async function prepareBatchDownload(assetIds: string[], actorId: string) 
   });
   await prisma.auditLog.createMany({ data: items.filter((item) => item.status === "READY").map((item) => ({ actorId, action: "BATCH_DOWNLOAD_REQUESTED", objectType: "Asset", objectId: item.assetId, assetId: item.assetId })) });
   return { items, readyIds: items.filter((item) => item.status === "READY").map((item) => item.assetId) };
+}
+
+export async function listDownloadableProductAssets(productIds: string[], scope: { channelId?: string; categoryId?: string }): Promise<DownloadableAsset[]> {
+  const assets = await prisma.asset.findMany({
+    where: {
+      status: "ACTIVE",
+      assetGroup: {
+        productId: { in: productIds },
+        channelId: scope.channelId,
+        categoryId: scope.categoryId,
+      },
+    },
+    include: { fileObject: true, assetGroup: { include: { product: { select: { spu: true } } } } },
+  });
+  return assets
+    .filter((asset) => asset.fileObject.status === "ACTIVE")
+    .sort((left, right) =>
+      left.assetGroup.product.spu.localeCompare(right.assetGroup.product.spu, "zh-CN")
+      || left.assetGroup.countryCode.localeCompare(right.assetGroup.countryCode, "zh-CN")
+      || left.assetType.localeCompare(right.assetType, "zh-CN")
+      || left.sortOrder - right.sortOrder
+      || left.createdAt.getTime() - right.createdAt.getTime()
+    )
+    .map((asset) => ({
+      id: asset.id,
+      filename: asset.filename,
+      archivePath: [countryName(asset.assetGroup.countryCode), asset.assetType, asset.color || "未指定"],
+      fileObject: { originalStorageKey: asset.fileObject.originalStorageKey },
+    }));
+}
+
+export async function logBatchDownloadAssets(assetIds: string[], actorId: string) {
+  if (!assetIds.length) return;
+  await prisma.auditLog.createMany({
+    data: assetIds.map((assetId) => ({ actorId, action: "BATCH_DOWNLOAD_REQUESTED", objectType: "Asset", objectId: assetId, assetId })),
+  });
 }

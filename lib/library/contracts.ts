@@ -12,11 +12,17 @@ export type CategoryListItem = {
   assetCount: number;
 };
 
-export type ProductListItem = {
+export type ProductReference = {
   id: string;
   spu: string;
   name: string;
   categoryId: string;
+};
+
+export type ProductListItem = ProductReference & {
+  assetCount: number;
+  thumbnailUrl: string | null;
+  previewSlot: number;
 };
 
 export type AssetGroupListItem = {
@@ -27,8 +33,12 @@ export type AssetGroupListItem = {
   categoryName: string;
   countryCode: string;
   assetType: string;
-  product: ProductListItem;
+  product: ProductReference;
   assetCount: number;
+};
+
+export type AssetGroupPage = Paginated<AssetGroupListItem> & {
+  productGroupTotal: number;
 };
 
 export type LibraryAsset = {

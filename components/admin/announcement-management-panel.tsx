@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit3, LoaderCircle, Megaphone, Save, X } from "lucide-react";
+import { Edit3, Info, LoaderCircle, Megaphone, Save, ScrollText, Trash2, TriangleAlert, Wrench, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
@@ -35,6 +35,7 @@ type AnnouncementManagementPanelProps = {
 
 const typeLabels: Record<AnnouncementType, string> = { INFO: "通知", MAINTENANCE: "维护", POLICY: "规范", ALERT: "警示" };
 const statusLabels: Record<AnnouncementStatus, string> = { DRAFT: "草稿", PUBLISHED: "已发布", ARCHIVED: "已归档" };
+const typeIcons = { INFO: Info, MAINTENANCE: Wrench, POLICY: ScrollText, ALERT: TriangleAlert } satisfies Record<AnnouncementType, typeof Info>;
 const emptyForm = { title: "", body: "", type: "INFO" as AnnouncementType, status: "DRAFT" as AnnouncementStatus, visibilityRoles: [] as UserRole[], pinned: false, startsAt: "", endsAt: "" };
 
 function roleText(roles: UserRole[]) {
@@ -47,6 +48,7 @@ export function AnnouncementManagementPanel({ announcements }: AnnouncementManag
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   function openCreate() {
@@ -99,11 +101,29 @@ export function AnnouncementManagementPanel({ announcements }: AnnouncementManag
     }
   }
 
+  async function deleteAnnouncement(item: AnnouncementItem) {
+    if (!window.confirm(`确认删除公告“${item.title}”？删除后不可恢复。`)) return;
+    setDeletingId(item.id);
+    setError("");
+    try {
+      await requestJson(`/api/admin/announcements/${item.id}`, { method: "DELETE" });
+      router.refresh();
+    } catch (actionError: unknown) {
+      setError(actionError instanceof Error ? actionError.message : "删除失败。");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
-      <div className="admin-section-heading"><div><p>Notice</p><h2 id="admin-announcements-title">公告管理</h2></div><button className="admin-primary-button" type="button" onClick={openCreate}><Megaphone aria-hidden="true" />发布公告</button></div>
-      <div className="admin-content-list">{announcements.length ? announcements.map((item) => <article key={item.id}><div className="admin-content-main"><div className="admin-content-title"><strong>{item.title}</strong>{item.pinned && <span>置顶</span>}</div><p>{item.body}</p><small>{typeLabels[item.type]} · {roleText(item.visibilityRoles)} · 已读 {item.readCount} · 更新 {item.updatedAt}</small><small>有效期 {item.startsAt} 至 {item.endsAt}</small></div><div className="admin-content-actions"><span className={item.status === "PUBLISHED" ? "admin-status success" : "admin-status"}>{statusLabels[item.status]}</span><button type="button" onClick={() => openEdit(item)}><Edit3 aria-hidden="true" />编辑</button></div></article>) : <div className="admin-empty compact">暂无公告。</div>}</div>
-      {open && <div className="admin-dialog-backdrop" role="presentation"><form className="admin-dialog admin-dialog-wide" onSubmit={submit} aria-labelledby="announcement-dialog-title"><header><div><p>Notice</p><h2 id="announcement-dialog-title">{active ? "编辑公告" : "发布公告"}</h2>{active && <small>{active.createdBy} · {active.createdAt}</small>}</div><button type="button" onClick={close} aria-label="关闭"><X aria-hidden="true" /></button></header><label><span>标题</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required maxLength={160} /></label><label><span>正文</span><textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} required maxLength={10000} /></label><div className="admin-dialog-columns"><label><span>类型</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as AnnouncementType })}>{announcementTypes.map((type) => <option value={type} key={type}>{typeLabels[type]}</option>)}</select></label><label><span>状态</span><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as AnnouncementStatus })}>{contentStatuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><div className="admin-dialog-columns"><label><span>开始时间</span><input type="datetime-local" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} /></label><label><span>结束时间</span><input type="datetime-local" value={form.endsAt} onChange={(event) => setForm({ ...form, endsAt: event.target.value })} /></label></div><label className="admin-checkbox"><input type="checkbox" checked={form.pinned} onChange={(event) => setForm({ ...form, pinned: event.target.checked })} /><span>置顶显示</span></label><fieldset className="admin-role-field"><legend>可见角色</legend><small>不勾选时默认全员可见。</small><div>{userRoles.map((role) => <label key={role}><input type="checkbox" checked={form.visibilityRoles.includes(role)} onChange={() => toggleRole(role)} />{roleLabels[role]}</label>)}</div></fieldset>{error && <p className="admin-dialog-error" role="alert">{error}</p>}<footer><button type="button" onClick={close} disabled={submitting}>取消</button><button className="primary" type="submit" disabled={submitting}>{submitting ? <LoaderCircle aria-hidden="true" /> : <Save aria-hidden="true" />}{active ? "保存" : "发布"}</button></footer></form></div>}
+      <div className="admin-section-heading"><div><p>公告</p><h2 id="admin-announcements-title">公告管理</h2></div><button className="admin-primary-button" type="button" onClick={openCreate}><Megaphone aria-hidden="true" />发布公告</button></div>
+      <div className="admin-content-list">{announcements.length ? announcements.map((item) => {
+        const TypeIcon = typeIcons[item.type];
+        return <article key={item.id}><span className={`admin-content-icon ${item.type.toLowerCase()}`} aria-label={typeLabels[item.type]}><TypeIcon aria-hidden="true" /></span><div className="admin-content-main"><div className="admin-content-title"><strong>{item.title}</strong>{item.pinned && <span>置顶</span>}<span>{typeLabels[item.type]}</span></div><p>{item.body}</p><small>{roleText(item.visibilityRoles)} · 已读 {item.readCount} · 更新 {item.updatedAt}</small><small>有效期 {item.startsAt} 至 {item.endsAt}</small></div><div className="admin-content-actions"><span className={item.status === "PUBLISHED" ? "admin-status success" : "admin-status"}>{statusLabels[item.status]}</span><button type="button" onClick={() => openEdit(item)}><Edit3 aria-hidden="true" />编辑</button><button className="danger" type="button" onClick={() => { void deleteAnnouncement(item); }} disabled={deletingId === item.id}>{deletingId === item.id ? <LoaderCircle aria-hidden="true" /> : <Trash2 aria-hidden="true" />}删除</button></div></article>;
+      }) : <div className="admin-empty compact">暂无公告。</div>}</div>
+      {error && !open && <p className="admin-dialog-error" role="alert">{error}</p>}
+      {open && <div className="admin-dialog-backdrop" role="presentation"><form className="admin-dialog admin-dialog-wide" onSubmit={submit} aria-labelledby="announcement-dialog-title"><header><div><p>公告</p><h2 id="announcement-dialog-title">{active ? "编辑公告" : "发布公告"}</h2>{active && <small>{active.createdBy} · {active.createdAt}</small>}</div><button type="button" onClick={close} aria-label="关闭"><X aria-hidden="true" /></button></header><label><span>标题</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required maxLength={160} /></label><label><span>正文</span><textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} required maxLength={10000} /></label><div className="admin-dialog-columns"><label><span>类型</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as AnnouncementType })}>{announcementTypes.map((type) => <option value={type} key={type}>{typeLabels[type]}</option>)}</select></label><label><span>状态</span><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as AnnouncementStatus })}>{contentStatuses.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><div className="admin-dialog-columns"><label><span>开始时间</span><input type="datetime-local" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} /></label><label><span>结束时间</span><input type="datetime-local" value={form.endsAt} onChange={(event) => setForm({ ...form, endsAt: event.target.value })} /></label></div><label className="admin-checkbox"><input type="checkbox" checked={form.pinned} onChange={(event) => setForm({ ...form, pinned: event.target.checked })} /><span>置顶显示</span></label><fieldset className="admin-role-field"><legend>可见角色</legend><small>不勾选时默认全员可见。</small><div>{userRoles.map((role) => <label key={role}><input type="checkbox" checked={form.visibilityRoles.includes(role)} onChange={() => toggleRole(role)} />{roleLabels[role]}</label>)}</div></fieldset>{error && <p className="admin-dialog-error" role="alert">{error}</p>}<footer><button type="button" onClick={close} disabled={submitting}>取消</button><button className="primary" type="submit" disabled={submitting}>{submitting ? <LoaderCircle aria-hidden="true" /> : <Save aria-hidden="true" />}{active ? "保存" : "发布"}</button></footer></form></div>}
     </>
   );
 }

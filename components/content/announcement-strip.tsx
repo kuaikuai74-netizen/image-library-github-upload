@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CheckCircle2 } from "lucide-react";
+import { Bell, CheckCircle2, Info, ScrollText, TriangleAlert, Wrench } from "lucide-react";
 import { useState } from "react";
 import type { ApiFailure, ApiSuccess } from "@/lib/library/contracts";
 
@@ -21,6 +21,7 @@ type AnnouncementStripProps = {
 };
 
 const typeLabels: Record<AnnouncementItem["type"], string> = { INFO: "通知", MAINTENANCE: "维护", POLICY: "规范", ALERT: "警示" };
+const typeIcons = { INFO: Info, MAINTENANCE: Wrench, POLICY: ScrollText, ALERT: TriangleAlert } satisfies Record<AnnouncementItem["type"], typeof Info>;
 
 export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
   const [items, setItems] = useState(announcements);
@@ -38,9 +39,12 @@ export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
 
   return (
     <section className="announcement-strip" aria-labelledby="announcements-title">
-      <div className="announcement-heading"><Bell aria-hidden="true" /><div><p>Announcements</p><h2 id="announcements-title">最新公告</h2></div></div>
+      <div className="announcement-heading"><Bell aria-hidden="true" /><div><p>公告</p><h2 id="announcements-title">最新公告</h2></div></div>
       <div className="announcement-list">
-        {items.map((item) => <article key={item.id} className={item.read ? "is-read" : undefined}><div><div className="announcement-title"><strong>{item.title}</strong>{item.pinned && <span>置顶</span>}<span>{typeLabels[item.type]}</span></div><p>{item.body}</p><small>{item.createdAt} · 有效期 {item.startsAt} 至 {item.endsAt}</small></div><button type="button" disabled={item.read} onClick={() => { void markRead(item.id); }}><CheckCircle2 aria-hidden="true" />{item.read ? "已读" : "标记已读"}</button></article>)}
+        {items.map((item) => {
+          const TypeIcon = typeIcons[item.type];
+          return <article key={item.id} className={item.read ? "is-read" : undefined}><span className={`announcement-icon ${item.type.toLowerCase()}`} aria-label={typeLabels[item.type]}><TypeIcon aria-hidden="true" /></span><div><div className="announcement-title"><strong>{item.title}</strong>{item.pinned && <span>置顶</span>}<span>{typeLabels[item.type]}</span></div><p>{item.body}</p><small>{item.createdAt} · 有效期 {item.startsAt} 至 {item.endsAt}</small></div><button type="button" disabled={item.read} onClick={() => { void markRead(item.id); }}><CheckCircle2 aria-hidden="true" />{item.read ? "已读" : "标记已读"}</button></article>;
+        })}
       </div>
     </section>
   );

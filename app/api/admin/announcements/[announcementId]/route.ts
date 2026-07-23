@@ -32,3 +32,24 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return routeFailure(error);
   }
 }
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const actor = await requireCurrentUser();
+    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权删除公告。", 403);
+    const { announcementId } = await params;
+    const parsedAnnouncementId = assetIdSchema.parse(announcementId);
+    const existing = await prisma.announcement.findUnique({ where: { id: parsedAnnouncementId }, select: { id: true, title: true, status: true } });
+    if (!existing) throw new UploadError("ANNOUNCEMENT_NOT_FOUND", "公告不存在。", 404);
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.announcementRead.deleteMany({ where: { announcementId: parsedAnnouncementId } });
+      await transaction.announcement.delete({ where: { id: parsedAnnouncementId } });
+      await transaction.auditLog.create({ data: { actorId: actor.id, action: "ANNOUNCEMENT_UPDATED", objectType: "Announcement", objectId: parsedAnnouncementId, details: { operation: "delete", title: existing.title, status: existing.status } } });
+    });
+
+    return success({ id: parsedAnnouncementId });
+  } catch (error) {
+    return routeFailure(error);
+  }
+}

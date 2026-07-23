@@ -23,7 +23,7 @@ export class LocalStorageService implements StorageService {
   async put({ key, body }: StoragePutInput) {
     const destination = this.resolvePath(key);
     await mkdir(path.dirname(destination), { recursive: true });
-    const source = body instanceof Uint8Array ? Readable.from(body) : body;
+    const source = body instanceof Uint8Array ? Readable.from([body]) : body;
     await pipeline(source, createWriteStream(destination, { flags: "wx" }));
   }
 

@@ -24,7 +24,7 @@ function normalizeRoles(roles: string[]) {
 
 export async function getAdminOverview() {
   const since = startOfToday();
-  const [assetTotal, productTotal, activeUsers, uploadToday, downloadToday, cleanupPending, storageUsage, recentDownloads, users, recentUploads, topDownloadActors, roleCounts, uploadStatusCounts, assetTypeCounts, categoryGroups, channelGroups, recentAdminActions, announcementStatusCounts, documentStatusCounts, announcements, documentPages] = await prisma.$transaction([
+  const [assetTotal, productTotal, activeUsers, uploadToday, downloadToday, cleanupPending, storageUsage, recentDownloads, users, topDownloadActors, roleCounts, uploadStatusCounts, assetTypeCounts, categoryGroups, channelGroups, announcementStatusCounts, documentStatusCounts, announcements, documentPages] = await prisma.$transaction([
     prisma.asset.count({ where: { status: "ACTIVE" } }),
     prisma.product.count(),
     prisma.user.count({ where: { status: "ACTIVE" } }),
@@ -55,11 +55,6 @@ export async function getAdminOverview() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
-    prisma.uploadRequest.findMany({
-      include: { uploader: { select: { name: true, email: true } }, assetGroup: { include: { product: true, category: true, channel: true } }, _count: { select: { assets: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
     prisma.auditLog.groupBy({
       by: ["actorId"],
       where: { action: { in: ["ASSET_DOWNLOADED", "BATCH_DOWNLOAD_REQUESTED"] }, actorId: { not: null } },
@@ -72,7 +67,6 @@ export async function getAdminOverview() {
     prisma.asset.groupBy({ by: ["assetType"], where: { status: "ACTIVE" }, _count: { _all: true }, orderBy: { _count: { assetType: "desc" } }, take: 6 }),
     prisma.assetGroup.findMany({ select: { category: { select: { name: true } }, _count: { select: { assets: { where: { status: "ACTIVE" } } } } } }),
     prisma.assetGroup.findMany({ select: { channel: { select: { name: true } }, _count: { select: { assets: { where: { status: "ACTIVE" } } } } } }),
-    prisma.auditLog.findMany({ include: { actor: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" }, take: 8 }),
     prisma.announcement.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { status: "asc" } }),
     prisma.documentPage.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { status: "asc" } }),
     prisma.announcement.findMany({ include: { createdBy: { select: { name: true, email: true } }, _count: { select: { reads: true } } }, orderBy: [{ pinned: "desc" }, { createdAt: "desc" }], take: 20 }),
@@ -120,18 +114,6 @@ export async function getAdminOverview() {
       channel: log.asset?.assetGroup.channel.name ?? "-",
       createdAt: compactDateTime(log.createdAt),
     })),
-    recentUploads: recentUploads.map((request) => ({
-      id: request.id,
-      uploader: request.uploader.name,
-      email: request.uploader.email,
-      status: request.status,
-      spu: request.assetGroup.product.spu,
-      category: request.assetGroup.category.name,
-      channel: request.assetGroup.channel.name,
-      assetCount: request._count.assets,
-      createdAt: compactDateTime(request.createdAt),
-      completedAt: compactDateTime(request.completedAt),
-    })),
     topDownloadUsers: topDownloadActors.map((item) => {
       const actor = actorById.get(item.actorId ?? "");
       return { id: item.actorId ?? "unknown", name: actor?.name ?? "未知用户", email: actor?.email ?? "-", downloads: item._count._all };
@@ -145,7 +127,6 @@ export async function getAdminOverview() {
     documentStatusCounts: documentStatusCounts.map((item) => ({ status: item.status, count: item._count._all })),
     announcements: announcements.map((announcement) => ({ id: announcement.id, title: announcement.title, body: announcement.body, type: announcement.type, status: announcement.status, visibilityRoles: normalizeRoles(announcement.visibilityRoles), pinned: announcement.pinned, startsAt: compactDateTime(announcement.startsAt), endsAt: compactDateTime(announcement.endsAt), startsAtInput: dateTimeInput(announcement.startsAt), endsAtInput: dateTimeInput(announcement.endsAt), readCount: announcement._count.reads, createdBy: announcement.createdBy?.name ?? "系统", createdAt: compactDateTime(announcement.createdAt), updatedAt: compactDateTime(announcement.updatedAt) })),
     documentPages: documentPages.map((document) => ({ id: document.id, slug: document.slug, title: document.title, body: document.body, category: document.category, status: document.status, visibilityRoles: normalizeRoles(document.visibilityRoles), sortOrder: document.sortOrder, createdBy: document.createdBy?.name ?? "系统", createdAt: compactDateTime(document.createdAt), updatedAt: compactDateTime(document.updatedAt) })),
-    recentAdminActions: recentAdminActions.map((log) => ({ id: log.id, actor: log.actor?.name ?? "系统", email: log.actor?.email ?? "-", action: log.action, objectType: log.objectType, objectId: log.objectId, createdAt: compactDateTime(log.createdAt) })),
   };
 }
 

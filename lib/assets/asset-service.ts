@@ -114,14 +114,13 @@ export async function logDownload(assetId: string, actorId: string, action: "ASS
   await prisma.auditLog.create({ data: { actorId, action, objectType: "Asset", objectId: assetId, assetId } });
 }
 
-export async function prepareBatchDownload(assetIds: string[], actorId: string) {
+export async function prepareBatchDownload(assetIds: string[]) {
   const assets = await prisma.asset.findMany({ where: { id: { in: assetIds }, status: "ACTIVE" }, include: { fileObject: true } });
   const byId = new Map(assets.filter((asset) => asset.fileObject.status === "ACTIVE").map((asset) => [asset.id, asset]));
   const items = assetIds.map((assetId) => {
     const asset = byId.get(assetId);
     return asset ? { assetId, status: "READY" as const, filename: asset.filename, errorCode: null } : { assetId, status: "FAILED" as const, filename: null, errorCode: "ASSET_NOT_FOUND" };
   });
-  await prisma.auditLog.createMany({ data: items.filter((item) => item.status === "READY").map((item) => ({ actorId, action: "BATCH_DOWNLOAD_REQUESTED", objectType: "Asset", objectId: item.assetId, assetId: item.assetId })) });
   return { items, readyIds: items.filter((item) => item.status === "READY").map((item) => item.assetId) };
 }
 

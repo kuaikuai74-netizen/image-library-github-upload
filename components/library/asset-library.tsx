@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AssetGrid } from "@/components/library/asset-grid";
 import { AssetPreviewDialog } from "@/components/library/asset-preview-dialog";
 import { RecycleBinDialog } from "@/components/library/recycle-bin-dialog";
-import { AnnouncementStrip } from "@/components/content/announcement-strip";
 import { CategoryCards } from "@/components/library/category-cards";
 import { ChannelNav } from "@/components/library/channel-nav";
 import { FilterBar, type Filters } from "@/components/library/filter-bar";
@@ -358,6 +357,7 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
         roleLabel={roleLabels[currentUser.role]}
         canUpload={canUpload}
         canAdmin={currentUser.role === "SUPER_ADMIN"}
+        announcements={announcements}
       />
       <div className="library-body">
         <ChannelNav channels={data?.channels ?? []} activeChannel={state.channelId} totalCount={totalAssets} onChange={(channelId) => updateUrl({ channelId, categoryId: undefined, spu: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
@@ -369,8 +369,6 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
               <span>{displayedAssetTotal} 张素材 · {displayedProductTotal} 个素材库</span>
             </div>
           </section>
-          <AnnouncementStrip announcements={announcements} />
-
           {initialLoading && <div className="data-state">正在加载数据库素材…</div>}
           {!initialLoading && activeError && <div className="data-state is-error" role="alert">{activeError}</div>}
           {!activeError && data && <>

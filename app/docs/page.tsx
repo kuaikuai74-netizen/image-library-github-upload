@@ -38,7 +38,7 @@ export default async function DocsPage() {
         <nav>{groups.map(([category, items]) => <a href={`#${category}`} key={category}>{category}<span>{items.length}</span></a>)}</nav>
       </aside>
       <section className="docs-main">
-        <header className="docs-header"><div><p>Documentation</p><h1>文档中心</h1></div><span>{user.name}</span></header>
+        <header className="docs-header"><div><p>使用文档</p><h1>文档中心</h1></div><span>{user.name}</span></header>
         {documents.length ? groups.map(([category, items]) => <section className="docs-section" id={category} key={category} aria-labelledby={`docs-${category}`}><div className="docs-section-heading"><FileText aria-hidden="true" /><div><p>{items.length} 篇文档</p><h2 id={`docs-${category}`}>{category}</h2></div></div><div className="docs-list">{items.map((document) => <article key={document.id}><header><div><strong>{document.title}</strong><small>/{document.slug} · 更新 {document.updatedAt}</small></div></header><div className="docs-body">{renderDocumentBody(document.body)}</div></article>)}</div></section>) : <div className="docs-empty">暂无可查看文档。</div>}
       </section>
     </main>

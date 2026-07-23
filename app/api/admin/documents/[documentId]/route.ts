@@ -36,3 +36,23 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return routeFailure(error);
   }
 }
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const actor = await requireCurrentUser();
+    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权删除文档。", 403);
+    const { documentId } = await params;
+    const parsedDocumentId = assetIdSchema.parse(documentId);
+    const existing = await prisma.documentPage.findUnique({ where: { id: parsedDocumentId }, select: { id: true, title: true, slug: true, status: true } });
+    if (!existing) throw new UploadError("DOCUMENT_NOT_FOUND", "文档不存在。", 404);
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.documentPage.delete({ where: { id: parsedDocumentId } });
+      await transaction.auditLog.create({ data: { actorId: actor.id, action: "DOCUMENT_UPDATED", objectType: "DocumentPage", objectId: parsedDocumentId, details: { operation: "delete", title: existing.title, slug: existing.slug, status: existing.status } } });
+    });
+
+    return success({ id: parsedDocumentId });
+  } catch (error) {
+    return routeFailure(error);
+  }
+}

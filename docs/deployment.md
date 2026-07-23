@@ -54,6 +54,8 @@ $env:LOCAL_STORAGE_ROOT=$env:TEST_STORAGE_ROOT
 npm run dev
 ```
 
+During local development, `npm run dev` runs `prisma generate` and `prisma migrate deploy` before starting Next.js. After adding or changing Prisma models, restart the dev server so the running Node process loads the regenerated Prisma Client.
+
 In another terminal, set:
 
 ```dotenv

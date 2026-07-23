@@ -80,6 +80,24 @@ enum ContentStatus {
   ARCHIVED
 }
 
+enum DownloadBatchType {
+  ASSETS
+  PRODUCTS
+}
+
+enum DownloadBatchStatus {
+  PREPARED
+  DOWNLOADED
+  PARTIAL
+  FAILED
+}
+
+enum DownloadBatchItemStatus {
+  READY
+  DOWNLOADED
+  FAILED
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -97,6 +115,7 @@ model User {
   announcements  Announcement[]  @relation("AnnouncementCreatedBy")
   announcementReads AnnouncementRead[]
   documentPages  DocumentPage[]  @relation("DocumentPageCreatedBy")
+  downloadBatches DownloadBatch[]
 
   @@index([status])
   @@index([role])
@@ -185,6 +204,7 @@ model Asset {
   uploadRequest UploadRequest? @relation(fields: [uploadRequestId], references: [id], onDelete: SetNull)
   deletedBy     User?      @relation("AssetDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   auditLogs     AuditLog[]
+  downloadBatchItems DownloadBatchItem[]
 
   @@index([assetGroupId, status, createdAt])
   @@index([fileObjectId, status])
@@ -298,4 +318,43 @@ model DocumentPage {
 
   @@index([status, category, sortOrder])
   @@index([createdById, createdAt])
+}
+
+model DownloadBatch {
+  id              String              @id @default(cuid())
+  actorId         String?
+  type            DownloadBatchType
+  status          DownloadBatchStatus  @default(PREPARED)
+  requestedCount  Int                 @default(0)
+  readyCount      Int                 @default(0)
+  failedCount     Int                 @default(0)
+  zipFilename     String              @db.VarChar(180)
+  scope           Json?
+  ipAddress       String?             @db.VarChar(80)
+  userAgent       String?
+  preparedAt      DateTime            @default(now())
+  downloadedAt    DateTime?
+  actor           User?               @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  items           DownloadBatchItem[]
+
+  @@index([actorId, preparedAt])
+  @@index([status, preparedAt])
+  @@index([type, preparedAt])
+}
+
+model DownloadBatchItem {
+  id              String                  @id @default(cuid())
+  batchId         String
+  assetId         String?
+  status          DownloadBatchItemStatus @default(READY)
+  filename        String?
+  archivePath     String?
+  errorCode       String?
+  errorMessage    String?
+  createdAt       DateTime                @default(now())
+  batch           DownloadBatch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  asset           Asset?                  @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, status])
+  @@index([assetId])
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { GitBranch, Layers3, ShoppingBag } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { ChannelListItem } from "@/lib/library/contracts";
 
 const channelIcons = {
@@ -46,6 +47,7 @@ export function ChannelNav({ channels, activeChannel, totalCount, onChange }: Ch
         })}
       </nav>
       <div className="rail-note">
+        <ThemeToggle compact />
         <strong>数据库浏览</strong>
         <p>渠道、品类和素材查询均来自受保护的分页接口，暂不连接文件存储或 NAS。</p>
       </div>

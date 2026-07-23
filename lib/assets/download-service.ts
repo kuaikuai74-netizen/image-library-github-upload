@@ -4,6 +4,7 @@ import { PassThrough, Readable } from "node:stream";
 import { getStorageService } from "@/lib/storage";
 
 export type DownloadableAsset = { id: string; filename: string; archivePath?: string[]; fileObject: { originalStorageKey: string } };
+export type FailedDownloadItem = { assetId: string | null; filename: string | null; status: "FAILED"; errorCode: string | null };
 
 function safeDownloadFilename(filename: string) {
   return filename.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").slice(0, 180) || "asset";
@@ -30,18 +31,18 @@ export function downloadHeaders(filename: string, contentType: string) {
   };
 }
 
-export function createZipStream(assets: DownloadableAsset[]) {
+export function createZipStream(assets: DownloadableAsset[], failedItems: FailedDownloadItem[] = []) {
   const output = new PassThrough();
   const archive = archiver("zip", { zlib: { level: 6 } });
   archive.on("error", (error: Error) => output.destroy(error));
   archive.pipe(output);
-  void appendArchive(archive, assets).catch((error: unknown) => output.destroy(error instanceof Error ? error : new Error("批量下载失败。")));
+  void appendArchive(archive, assets, failedItems).catch((error: unknown) => output.destroy(error instanceof Error ? error : new Error("批量下载失败。")));
   return output;
 }
 
-async function appendArchive(archive: Archiver, assets: DownloadableAsset[]) {
+async function appendArchive(archive: Archiver, assets: DownloadableAsset[], failedItems: FailedDownloadItem[]) {
   const storage = getStorageService();
-  const manifest: Array<{ assetId: string; filename: string; status: "READY" | "FAILED" }> = [];
+  const manifest: Array<{ assetId: string | null; filename: string | null; status: "READY" | "FAILED"; errorCode?: string | null }> = failedItems.map((item) => ({ assetId: item.assetId, filename: item.filename, status: item.status, errorCode: item.errorCode }));
   const usedFilenames = new Set<string>();
   for (const asset of assets) {
     const object = await storage.get(asset.fileObject.originalStorageKey);

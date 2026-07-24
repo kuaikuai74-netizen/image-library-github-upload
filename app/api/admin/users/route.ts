@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { userRoles } from "@/lib/auth/roles";
 import { hashPassword } from "@/lib/auth/password";
 import { UploadError } from "@/lib/assets/upload-errors";
@@ -18,8 +18,7 @@ const createUserSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权创建用户。", 403);
+    const actor = await requireSuperAdmin();
     const input = createUserSchema.parse(await request.json());
     const { password, ...userInput } = input;
     const user = await prisma.$transaction(async (transaction) => {

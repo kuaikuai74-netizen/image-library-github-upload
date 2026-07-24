@@ -2,14 +2,13 @@ import { Prisma } from "@prisma/client";
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { documentCreateSchema } from "@/lib/admin/content-schema";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { UploadError } from "@/lib/assets/upload-errors";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权查看文档。", 403);
+    await requireSuperAdmin();
     const documents = await prisma.documentPage.findMany({
       include: { createdBy: { select: { name: true, email: true } } },
       orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
@@ -23,8 +22,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权创建文档。", 403);
+    const actor = await requireSuperAdmin();
     const input = documentCreateSchema.parse(await request.json());
     const document = await prisma.$transaction(async (transaction) => {
       const created = await transaction.documentPage.create({

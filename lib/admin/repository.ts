@@ -19,7 +19,8 @@ function dateTimeInput(value: Date | null) {
 }
 
 function normalizeRoles(roles: string[]) {
-  return roles.filter((role): role is UserRole => userRoles.includes(role as UserRole));
+  const activeRoles = new Set<string>(userRoles);
+  return roles.filter((role): role is UserRole => activeRoles.has(role));
 }
 
 export async function getAdminOverview() {

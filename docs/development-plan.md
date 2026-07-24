@@ -39,6 +39,7 @@ Status: operational console, user-facing content consumption, ZIP download batch
 ## Phase 5: LAN Deployment Readiness
 
 Status: in progress. The production migration command and deployment, backup, recovery, and verification runbook are documented. The remaining acceptance work is a rehearsal against an isolated configured PostgreSQL deployment.
+Upload load-test guidance and a reusable HTTP upload load script are now included so the rehearsal can validate multi-user upload behavior before promotion.
 
 Local rehearsal can use `npm run clear:assets` to remove uploaded asset metadata and referenced local storage objects while preserving users, channels, and categories.
 

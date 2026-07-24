@@ -1,14 +1,12 @@
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { announcementCreateSchema } from "@/lib/admin/content-schema";
-import { requireCurrentUser } from "@/lib/auth/server";
-import { UploadError } from "@/lib/assets/upload-errors";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权查看公告。", 403);
+    await requireSuperAdmin();
     const announcements = await prisma.announcement.findMany({
       include: { createdBy: { select: { name: true, email: true } }, _count: { select: { reads: true } } },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
@@ -22,8 +20,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权发布公告。", 403);
+    const actor = await requireSuperAdmin();
     const input = announcementCreateSchema.parse(await request.json());
     const announcement = await prisma.$transaction(async (transaction) => {
       const created = await transaction.announcement.create({

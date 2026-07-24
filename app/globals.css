@@ -140,7 +140,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .admin-link-button { text-decoration: none; color: var(--accent); font-weight: 700; white-space: nowrap; }
 .admin-link-button span, .upload-button span, .theme-switcher span { white-space: nowrap; word-break: keep-all; }
 .announcement-entry { position: relative; }
-.announcement-entry em { position: absolute; top: -7px; right: -7px; display: grid; min-width: 18px; height: 18px; place-items: center; border: 2px solid var(--topbar-bg); border-radius: 999px; padding: 0 4px; background: var(--danger); color: #fff; font-size: 10px; font-style: normal; font-weight: 900; line-height: 1; }
+.announcement-entry em { display: grid; min-width: 16px; height: 16px; place-items: center; border-radius: 999px; padding: 0 4px; background: var(--danger); color: #fff; font-size: 10px; font-style: normal; font-weight: 900; line-height: 1; }
 .upload-button { border-color: var(--accent-deep); background: var(--accent-deep); color: #fff; font-weight: 700; }
 .upload-button { white-space: nowrap; }
 .upload-button:hover { background: var(--accent-hover); }

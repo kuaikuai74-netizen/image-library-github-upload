@@ -103,6 +103,9 @@ npm run e2e
 
 集成与 E2E 测试必须使用测试数据库，禁止填写生产 `DATABASE_URL`。详见 [docs/deployment.md](docs/deployment.md)。
 
+多人上传承压测试需要先启动隔离测试部署，再运行 `npm run load:uploads`。详见 [docs/load-testing.md](docs/load-testing.md)。
+上传或承压测试后可运行 `npm run verify:storage`，只读检查数据库中的有效素材是否都有对应原图、缩略图和预览图。
+
 ## 素材库查询 API
 
 所有接口要求已登录且在服务端验证 `read` 权限：
@@ -129,6 +132,7 @@ npm run e2e
 - `POST /api/uploads/context` 接收渠道、品类、SPU、国家、素材组与图片。服务端会按输入的 SPU 创建或复用商品，并创建或复用对应素材组；新商品的名称默认与 SPU 相同。
 - `POST /api/uploads/archive` 接收一个 ZIP 和渠道、品类、SPU、素材组上下文。服务端从 ZIP 路径中的 `德语`、`英语`、`法语`、`意大利语`、`西班牙语` 目录分别识别德国、英国、法国、意大利、西班牙，并为每个识别出的国家创建或复用对应素材组。
 - 服务端限制单文件大小为 `MAX_UPLOAD_BYTES`，使用 Sharp 解码确认真实图片格式，计算 SHA-256，并生成 WebP 缩略图和预览图。
+- 普通图片上传通过 `UPLOAD_PROCESSING_CONCURRENCY` 限制单个请求内的图片处理并发，避免多人上传时 Sharp 和磁盘 I/O 无界增长。
 - ZIP 上传额外受 `MAX_ZIP_UPLOAD_BYTES`、`MAX_ZIP_ENTRIES` 和 `MAX_ZIP_UNCOMPRESSED_BYTES` 限制；不会解压到服务器磁盘。
 - 文件先写入 `temporary/`，处理成功后移动到 `originals/`、`thumbnails/`、`previews/`。数据库仅保存相对 `storageKey`，不保存绝对路径。
 - 图片通过已登录的 `GET /api/assets/:assetId/content?variant=original|thumbnail|preview` 读取；前端不会获取或拼接本地目录路径。
@@ -212,4 +216,5 @@ var/
 - [数据模型](docs/data-model.md)
 - [本地存储](docs/storage.md)
 - [部署与测试](docs/deployment.md)
+- [承压测试](docs/load-testing.md)
 - [NAS 接入替换计划](docs/nas-integration-plan.md)

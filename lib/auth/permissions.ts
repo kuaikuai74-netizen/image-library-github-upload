@@ -7,13 +7,18 @@ type AssetPermissionContext = {
   uploadedById?: string;
 };
 
+export function hasSuperAdminPermission(role: UserRole) {
+  return role === "SUPER_ADMIN";
+}
+
 export function hasAssetPermission(
   role: UserRole,
   permission: AssetPermission,
   context: AssetPermissionContext = {},
 ) {
-  if (role === "SUPER_ADMIN" || role === "ASSET_ADMIN") return true;
+  void context;
+  if (role === "SUPER_ADMIN") return true;
+  if (role === "ASSET_ADMIN") return permission === "read" || permission === "download" || permission === "upload" || permission === "delete";
   if (role === "VIEWER") return permission === "read" || permission === "download";
-  if (permission === "read" || permission === "upload") return true;
-  return (permission === "edit" || permission === "delete") && context.userId === context.uploadedById;
+  return false;
 }

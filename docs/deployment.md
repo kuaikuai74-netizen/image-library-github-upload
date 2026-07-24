@@ -13,7 +13,9 @@
 2. Run `npm ci`, `npm run db:generate`, and `npm run db:deploy`. `db:deploy` applies only committed migrations; never run `npm run db:migrate` in a deployed environment.
 3. For the first local administrator only, set the three `DEV_ADMIN_*` values and run `npm run db:seed`. The seed upserts that account and does not write its password to the repository.
 4. Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` from the release candidate.
-5. Start the service with `npm run start` after a successful build. Keep application stdout and stderr with the process manager, and monitor database reachability, storage-root free space, and upload failures.
+5. For an isolated rehearsal, start the app and run `npm run test:integration`, `npm run e2e`, and the staged upload load test in [load-testing.md](load-testing.md).
+   Run `npm run verify:storage` after upload and download checks to confirm active database records still have physical originals, thumbnails, and previews.
+6. Start the service with `npm run start` after a successful build. Keep application stdout and stderr with the process manager, and monitor database reachability, storage-root free space, upload failures, CPU, memory, and disk I/O during upload windows.
 
 ## Migration Rollout
 

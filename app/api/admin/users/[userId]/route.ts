@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { userRoles, userStatuses } from "@/lib/auth/roles";
 import { UploadError } from "@/lib/assets/upload-errors";
 import { assetIdSchema } from "@/lib/assets/upload-schema";
@@ -20,8 +20,7 @@ const updateUserSchema = z.object({
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权修改用户。", 403);
+    const actor = await requireSuperAdmin();
     const { userId } = await params;
     const parsedUserId = assetIdSchema.parse(userId);
     const input = updateUserSchema.parse(await request.json());

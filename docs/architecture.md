@@ -60,7 +60,7 @@ The first-level SPU library view supports selecting one or multiple libraries an
 
 - Auth.js Credentials Provider accepts username or email plus password. Passwords are stored only as bcrypt hashes.
 - Sessions use signed JWT cookies. Every protected page and API request resolves the user from PostgreSQL again and rejects missing or `DISABLED` users.
-- Roles are `SUPER_ADMIN`, `ASSET_ADMIN`, `UPLOADER`, and `VIEWER`. Server-side guards enforce permissions before routes return data or begin a mutation.
+- Active roles are `SUPER_ADMIN`, `ASSET_ADMIN`, and `VIEWER`. `ASSET_ADMIN` is presented as 素材人员 and can read, download, upload, and delete. Server-side guards enforce permissions before routes return data or begin a mutation.
 - Authorize every route/action on the server; hide unavailable UI controls as a secondary safeguard.
 - Validate route and form parameters before entering services.
 - Keep secrets in `.env`, never in committed files.

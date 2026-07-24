@@ -30,6 +30,12 @@ export type UploadFileResult = {
 };
 
 export const maximumUploadBytes = Number(process.env.MAX_UPLOAD_BYTES ?? 26_214_400);
+export const uploadProcessingConcurrency = configuredPositiveInteger("UPLOAD_PROCESSING_CONCURRENCY", 3);
+
+function configuredPositiveInteger(name: string, fallback: number) {
+  const configured = Number(process.env[name]);
+  return Number.isSafeInteger(configured) && configured > 0 ? configured : fallback;
+}
 
 function failureDetails(error: unknown) {
   if (error instanceof UploadError) return { code: error.code, message: error.message };
@@ -196,7 +202,7 @@ export async function uploadFiles(assetGroupId: string, uploaderId: string, idem
   }
   const files = options.sequential
     ? await processFilesSequentially(request.id, assetGroupId, uploaderId, namedInputs)
-    : await Promise.all(namedInputs.map((input) => processFile(request.id, assetGroupId, uploaderId, input)));
+    : await processFilesWithConcurrency(request.id, assetGroupId, uploaderId, namedInputs, uploadProcessingConcurrency);
   const activeCount = files.filter((file) => file.status === "ACTIVE").length;
   const status = activeCount === files.length ? "COMPLETED" : activeCount ? "PARTIAL" : "FAILED";
   await prisma.uploadRequest.update({ where: { id: request.id }, data: { status, completedAt: new Date() } });
@@ -206,6 +212,20 @@ export async function uploadFiles(assetGroupId: string, uploaderId: string, idem
 async function processFilesSequentially(uploadRequestId: string, assetGroupId: string, uploaderId: string, inputs: UploadFileInput[]) {
   const files: UploadFileResult[] = [];
   for (const input of inputs) files.push(await processFile(uploadRequestId, assetGroupId, uploaderId, input));
+  return files;
+}
+
+async function processFilesWithConcurrency(uploadRequestId: string, assetGroupId: string, uploaderId: string, inputs: UploadFileInput[], concurrency: number) {
+  const files: UploadFileResult[] = new Array(inputs.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < inputs.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      files[index] = await processFile(uploadRequestId, assetGroupId, uploaderId, inputs[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, () => worker()));
   return files;
 }
 

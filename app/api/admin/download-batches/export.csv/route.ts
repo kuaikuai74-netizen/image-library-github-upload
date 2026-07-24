@@ -1,12 +1,10 @@
 import { routeFailure } from "@/lib/api/route-helpers";
-import { requireCurrentUser } from "@/lib/auth/server";
-import { UploadError } from "@/lib/assets/upload-errors";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { exportAdminDownloadBatchesCsv, parseAdminDownloadBatchFilters } from "@/lib/admin/download-batch-repository";
 
 export async function GET(request: Request) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权导出下载批次。", 403);
+    await requireSuperAdmin();
     const searchParams = new URL(request.url).searchParams;
     const filters = parseAdminDownloadBatchFilters(Object.fromEntries(searchParams.entries()));
     const csv = await exportAdminDownloadBatchesCsv(filters);

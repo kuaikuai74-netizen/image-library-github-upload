@@ -12,6 +12,8 @@
     "test": "vitest run --exclude tests/integration/** --exclude tests/e2e/**",
     "test:integration": "vitest run tests/integration",
     "e2e": "playwright test",
+    "load:uploads": "tsx scripts/load-upload.ts",
+    "verify:storage": "tsx scripts/verify-storage-consistency.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

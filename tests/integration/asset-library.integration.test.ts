@@ -25,9 +25,11 @@ const [{ prisma }, { authenticateCredentials }, { hasAssetPermission }, { hashPa
   import("../../lib/storage"),
 ]);
 
-let uploadedAssetIds: string[] = [];
-let fileObjectKeys: string[] = [];
+const uploadedAssetIds: string[] = [];
+const uploadRequestIds: string[] = [];
+const fileObjectKeys: string[] = [];
 let viewerId = "";
+let uploaderIds: string[] = [];
 
 describe("asset library integration", () => {
   let administratorId = "";
@@ -46,15 +48,22 @@ describe("asset library integration", () => {
       create: { email: "integration-viewer@example.test", username: "integration-viewer", name: "Integration Viewer", passwordHash: await hashPassword("integration-viewer-password"), role: "VIEWER", status: "ACTIVE" },
     });
     viewerId = viewer.id;
+    const uploaders = await Promise.all(Array.from({ length: 4 }, async (_item, index) => prisma.user.upsert({
+      where: { email: `integration-uploader-${index}@example.test` },
+      update: { passwordHash: await hashPassword("integration-uploader-password"), role: "ASSET_ADMIN", status: "ACTIVE", name: `Integration Uploader ${index}`, username: `integration-uploader-${index}` },
+      create: { email: `integration-uploader-${index}@example.test`, username: `integration-uploader-${index}`, name: `Integration Uploader ${index}`, passwordHash: await hashPassword("integration-uploader-password"), role: "ASSET_ADMIN", status: "ACTIVE" },
+    })));
+    uploaderIds = uploaders.map((uploader) => uploader.id);
   });
 
   afterAll(async () => {
     const objects = await prisma.fileObject.findMany({ where: { assets: { some: { id: { in: uploadedAssetIds } } } } });
     await prisma.asset.deleteMany({ where: { id: { in: uploadedAssetIds } } });
     await prisma.fileObject.deleteMany({ where: { id: { in: objects.map((object) => object.id) }, assets: { none: {} } } });
+    await prisma.uploadRequest.deleteMany({ where: { id: { in: uploadRequestIds } } });
     const storage = getStorageService();
     await Promise.all(fileObjectKeys.map((key) => storage.delete(key)));
-    await prisma.user.deleteMany({ where: { id: viewerId } });
+    await prisma.user.deleteMany({ where: { id: { in: [viewerId, ...uploaderIds].filter(Boolean) } } });
     await prisma.$disconnect();
   });
 
@@ -87,13 +96,43 @@ describe("asset library integration", () => {
     expect(second.files[0]?.duplicateOfAssetId).toBe(firstAssetId);
     expect(firstAssetId).toBeTruthy();
     expect(secondAssetId).toBeTruthy();
-    uploadedAssetIds = [firstAssetId ?? "", secondAssetId ?? ""].filter(Boolean);
+    uploadedAssetIds.push(...[firstAssetId ?? "", secondAssetId ?? ""].filter(Boolean));
+    uploadRequestIds.push(first.requestId, second.requestId);
 
     const persisted = await prisma.asset.findMany({ where: { id: { in: uploadedAssetIds } }, include: { fileObject: true } });
     expect(persisted).toHaveLength(2);
     expect(new Set(persisted.map((asset) => asset.fileObjectId)).size).toBe(1);
     expect(persisted[0]?.fileObject.mimeType).toBe("image/png");
-    fileObjectKeys = [persisted[0]?.fileObject.originalStorageKey, persisted[0]?.fileObject.thumbnailStorageKey, persisted[0]?.fileObject.previewStorageKey].filter((key): key is string => Boolean(key));
+    fileObjectKeys.push(...[persisted[0]?.fileObject.originalStorageKey, persisted[0]?.fileObject.thumbnailStorageKey, persisted[0]?.fileObject.previewStorageKey].filter((key): key is string => Boolean(key)));
+  });
+
+  it("handles concurrent uploads from multiple users without missing storage derivatives", async () => {
+    const uploads = await Promise.all(uploaderIds.map(async (uploaderId, userIndex) => {
+      const inputs = await Promise.all(Array.from({ length: 2 }, async (_item, fileIndex) => {
+        const image = await sharp({ create: { width: 16 + fileIndex, height: 12 + userIndex, channels: 3, background: { r: 40 + userIndex * 30, g: 120 + fileIndex * 20, b: 190 } } }).png().toBuffer();
+        return { file: new File([Uint8Array.from(image)], `concurrent-${userIndex}-${fileIndex}.png`, { type: "image/png" }), metadata: { assetType: "A+详情页", sortOrder: 1100 + userIndex * 10 + fileIndex } };
+      }));
+      return uploadFiles(assetGroupId, uploaderId, crypto.randomUUID(), inputs);
+    }));
+
+    const files = uploads.flatMap((upload) => upload.files);
+    expect(uploads.every((upload) => upload.status === "COMPLETED")).toBe(true);
+    expect(files).toHaveLength(uploaderIds.length * 2);
+    expect(files.every((file) => file.status === "ACTIVE" && file.assetId)).toBe(true);
+
+    const assetIds = files.map((file) => file.assetId).filter((assetId): assetId is string => Boolean(assetId));
+    uploadedAssetIds.push(...assetIds);
+    uploadRequestIds.push(...uploads.map((upload) => upload.requestId));
+
+    const persisted = await prisma.asset.findMany({ where: { id: { in: assetIds } }, include: { fileObject: true } });
+    expect(persisted).toHaveLength(assetIds.length);
+    expect(persisted.every((asset) => asset.status === "ACTIVE" && asset.fileObject.status === "ACTIVE")).toBe(true);
+    const storage = getStorageService();
+    for (const asset of persisted) {
+      const keys = [asset.fileObject.originalStorageKey, asset.fileObject.thumbnailStorageKey, asset.fileObject.previewStorageKey].filter((key): key is string => Boolean(key));
+      fileObjectKeys.push(...keys);
+      await Promise.all(keys.map(async (key) => expect(await storage.exists(key)).toBe(true)));
+    }
   });
 
   it("soft-deletes and restores without removing a shared file object", async () => {

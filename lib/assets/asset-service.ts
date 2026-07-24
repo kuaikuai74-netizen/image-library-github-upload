@@ -1,4 +1,5 @@
 import type { Prisma, UserRole } from "@prisma/client";
+import { hasAssetPermission } from "@/lib/auth/permissions";
 import { countryName } from "@/lib/library/countries";
 import { prisma } from "@/lib/prisma";
 import { UploadError } from "@/lib/assets/upload-service";
@@ -76,8 +77,8 @@ export async function restoreAsset(assetId: string, actorId: string) {
 }
 
 export async function listRecycleBin(role: UserRole, userId: string, page: number, pageSize: number) {
-  if (role === "VIEWER") throw new UploadError("FORBIDDEN", "无权查看回收站。", 403);
-  const where: Prisma.AssetWhereInput = { status: "DELETED", ...(role === "UPLOADER" ? { uploadedById: userId } : {}) };
+  if (!hasAssetPermission(role, "delete", { userId })) throw new UploadError("FORBIDDEN", "无权查看回收站。", 403);
+  const where: Prisma.AssetWhereInput = { status: "DELETED" };
   const [items, total] = await prisma.$transaction([
     prisma.asset.findMany({ where, include: assetDetailsInclude, orderBy: { deletedAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize }),
     prisma.asset.count({ where }),

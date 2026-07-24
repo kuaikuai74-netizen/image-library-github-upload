@@ -1,7 +1,7 @@
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { announcementUpdateSchema } from "@/lib/admin/content-schema";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { UploadError } from "@/lib/assets/upload-errors";
 import { assetIdSchema } from "@/lib/assets/upload-schema";
 import { prisma } from "@/lib/prisma";
@@ -10,8 +10,7 @@ type RouteContext = { params: Promise<{ announcementId: string }> };
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权修改公告。", 403);
+    const actor = await requireSuperAdmin();
     const { announcementId } = await params;
     const parsedAnnouncementId = assetIdSchema.parse(announcementId);
     const input = announcementUpdateSchema.parse(await request.json());
@@ -35,8 +34,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权删除公告。", 403);
+    const actor = await requireSuperAdmin();
     const { announcementId } = await params;
     const parsedAnnouncementId = assetIdSchema.parse(announcementId);
     const existing = await prisma.announcement.findUnique({ where: { id: parsedAnnouncementId }, select: { id: true, title: true, status: true } });

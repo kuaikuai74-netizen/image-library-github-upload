@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
 import { documentUpdateSchema } from "@/lib/admin/content-schema";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { UploadError } from "@/lib/assets/upload-errors";
 import { assetIdSchema } from "@/lib/assets/upload-schema";
 import { prisma } from "@/lib/prisma";
@@ -11,8 +11,7 @@ type RouteContext = { params: Promise<{ documentId: string }> };
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权修改文档。", 403);
+    const actor = await requireSuperAdmin();
     const { documentId } = await params;
     const parsedDocumentId = assetIdSchema.parse(documentId);
     const input = documentUpdateSchema.parse(await request.json());
@@ -39,8 +38,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权删除文档。", 403);
+    const actor = await requireSuperAdmin();
     const { documentId } = await params;
     const parsedDocumentId = assetIdSchema.parse(documentId);
     const existing = await prisma.documentPage.findUnique({ where: { id: parsedDocumentId }, select: { id: true, title: true, slug: true, status: true } });

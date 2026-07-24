@@ -1,5 +1,5 @@
 import { archiveLanguageCountryCodes } from "@/lib/assets/archive-routes";
-import { maximumUploadBytes } from "@/lib/assets/upload-service";
+import { maximumUploadBytes, uploadProcessingConcurrency } from "@/lib/assets/upload-service";
 import { roleLabels, userRoles, type UserRole } from "@/lib/auth/roles";
 import { assetTypeOptions, countryOptions } from "@/lib/library/countries";
 
@@ -9,8 +9,8 @@ const maximumArchiveUncompressedBytes = configuredLimit("MAX_ZIP_UNCOMPRESSED_BY
 
 const rolePermissions: Record<UserRole, string[]> = {
   SUPER_ADMIN: ["后台管理", "查看", "下载", "上传", "编辑", "删除", "用户/公告/文档管理"],
-  ASSET_ADMIN: ["查看", "下载", "上传", "编辑", "删除"],
-  UPLOADER: ["查看", "上传", "编辑/删除本人上传素材"],
+  ASSET_ADMIN: ["查看", "下载", "上传", "删除"],
+  UPLOADER: [],
   VIEWER: ["查看", "下载"],
 };
 
@@ -35,6 +35,7 @@ export function getAdminPolicySettings() {
     uploadLimits: [
       { label: "单图上传大小", value: formatBytes(maximumUploadBytes), source: envSource("MAX_UPLOAD_BYTES") },
       { label: "单次普通上传文件数", value: "1-20 个", source: "代码固定：uploadRequestSchema.metadata.max(20)" },
+      { label: "普通上传处理并发", value: `${uploadProcessingConcurrency} 张`, source: envSource("UPLOAD_PROCESSING_CONCURRENCY") },
       { label: "素材排序范围", value: "1-10,000", source: "代码固定：uploadMetadataSchema.sortOrder" },
       { label: "其他/颜色字段长度", value: "1-64 字符", source: "代码固定：uploadMetadataSchema.color" },
     ],

@@ -60,6 +60,11 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
     }
   }
 
+  function openAnnouncements() {
+    setAnnouncementOpen(true);
+    announcementItems.filter((item) => !item.read).forEach((item) => { void markAnnouncementRead(item.id); });
+  }
+
   return (
     <>
     <header className="topbar">
@@ -87,7 +92,7 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
       </label>
 
       <div className="header-actions">
-        <button className="icon-button announcement-entry" type="button" onClick={() => setAnnouncementOpen(true)} aria-label={`公告，${unreadCount} 条未读`} title="公告">
+        <button className="icon-button announcement-entry" type="button" onClick={openAnnouncements} aria-label={`公告，${unreadCount} 条未读`} title="公告">
           <Bell aria-hidden="true" />
           <span>公告</span>
           {unreadCount > 0 && <em>{unreadCount > 99 ? "99+" : unreadCount}</em>}

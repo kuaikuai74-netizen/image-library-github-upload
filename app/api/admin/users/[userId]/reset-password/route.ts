@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { success } from "@/lib/api/response";
 import { routeFailure } from "@/lib/api/route-helpers";
-import { requireCurrentUser } from "@/lib/auth/server";
+import { requireSuperAdmin } from "@/lib/auth/server";
 import { hashPassword } from "@/lib/auth/password";
 import { UploadError } from "@/lib/assets/upload-errors";
 import { assetIdSchema } from "@/lib/assets/upload-schema";
@@ -13,8 +13,7 @@ const resetPasswordSchema = z.object({ password: z.string().min(8).max(128) });
 
 export async function POST(request: Request, { params }: RouteContext) {
   try {
-    const actor = await requireCurrentUser();
-    if (actor.role !== "SUPER_ADMIN") throw new UploadError("FORBIDDEN", "无权重置密码。", 403);
+    const actor = await requireSuperAdmin();
     const { userId } = await params;
     const parsedUserId = assetIdSchema.parse(userId);
     const input = resetPasswordSchema.parse(await request.json());

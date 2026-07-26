@@ -10,6 +10,10 @@ function safeDownloadFilename(filename: string) {
   return filename.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").slice(0, 180) || "asset";
 }
 
+function asciiDownloadFilename(filename: string) {
+  return safeDownloadFilename(filename).replace(/[^\x20-\x7E]/g, "_") || "asset";
+}
+
 function safeArchiveName(asset: DownloadableAsset) {
   if (!asset.archivePath?.length) return safeDownloadFilename(asset.filename);
   const segments = [...asset.archivePath, asset.filename].map(safeDownloadFilename).filter(Boolean);
@@ -24,9 +28,10 @@ function withAssetId(asset: DownloadableAsset, archiveName: string) {
 
 export function downloadHeaders(filename: string, contentType: string) {
   const safeFilename = safeDownloadFilename(filename);
+  const asciiFilename = asciiDownloadFilename(filename);
   return {
     "Content-Type": contentType,
-    "Content-Disposition": `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`,
+    "Content-Disposition": `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`,
     "Cache-Control": "private, no-store",
   };
 }

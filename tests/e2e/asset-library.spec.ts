@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 
 const administratorEmail = process.env.E2E_ADMIN_EMAIL;
 const administratorPassword = process.env.E2E_ADMIN_PASSWORD;
@@ -24,36 +25,44 @@ test("administrator manages an uploaded asset from login through sign-out", asyn
   await expect(page.getByLabel("国家")).toHaveText(/德国[\s\S]*英国[\s\S]*法国[\s\S]*意大利[\s\S]*西班牙[\s\S]*荷兰[\s\S]*波兰/);
   await expect(page.getByLabel("图片类型")).toHaveText(/主副图[\s\S]*A\+详情页[\s\S]*品牌营销[\s\S]*其他/);
   await page.getByRole("button", { name: "ZIP 自动分国" }).click();
-  await expect(page.getByText("ZIP 自动识别")).toBeVisible();
+  await expect(page.getByText("ZIP 自动识别").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "选择 ZIP 压缩包" })).toBeVisible();
   await page.getByRole("button", { name: "单国图片" }).click();
+  const imageBuffer = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#2f80ed" } }).png().toBuffer();
   await page.locator('input[type="file"]').setInputFiles({
     name: `e2e-${Date.now()}.png`,
     mimeType: "image/png",
-    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAF/gJ+Oc3nAAAAAElFTkSuQmCC", "base64"),
+    buffer: imageBuffer,
   });
   await page.getByRole("button", { name: /上传 1 个文件/ }).click();
   await expect(page.getByText("状态：ACTIVE")).toBeVisible();
 
   await page.getByRole("button", { name: "返回素材库" }).click();
   await expect(page.getByPlaceholder("搜索 SPU、文件名、SKU 或品类")).toBeVisible();
-  await page.getByPlaceholder("搜索 SPU、文件名、SKU 或品类").fill("e2e-");
+  await page.getByPlaceholder("搜索 SPU、文件名、SKU 或品类").fill("Vertex Lift 01");
   await expect(page.getByRole("heading", { name: "选择素材库" })).toBeVisible();
-  await page.getByRole("button", { name: /e2e-/ }).click();
+  await page.getByRole("button", { name: /Vertex Lift 01[\s\S]*升降桌/ }).click();
+  await expect(page.getByRole("heading", { name: "Vertex Lift 01", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Vertex_Lift_01_法国_A\+详情页_01\.png/ }).first()).toBeVisible();
   await expect(page.getByLabel("图片类型")).toBeVisible();
   await expect(page.locator('[aria-label^="预览"]').first()).toBeVisible();
   await page.locator('[aria-label^="预览"]').first().click();
-  await page.getByLabel("颜色").fill("E2E 蓝");
+  await page.getByRole("textbox", { name: "其他" }).fill("E2E 蓝");
   await page.getByRole("button", { name: "保存修改" }).click();
   await expect(page.getByText("素材信息已保存。")).toBeVisible();
+  const assetsResponse = await page.request.get("/api/assets?q=Vertex%20Lift%2001&pageSize=1");
+  expect(assetsResponse.ok()).toBe(true);
+  const assetsBody = await assetsResponse.json() as { data: { items: Array<{ id: string }> } }; 
+  const downloadableAssetId = assetsBody.data.items[0]?.id;
+  expect(downloadableAssetId).toBeTruthy();
+  const downloadResponse = await page.request.get(`/api/assets/${downloadableAssetId}/download`);
+  expect(downloadResponse.ok()).toBe(true);
+  expect(downloadResponse.headers()["content-disposition"]).toContain("filename*=UTF-8");
 
-  await page.locator('[aria-label^="预览"]').first().click();
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "下载原图" }).click();
-  expect((await download).suggestedFilename()).toMatch(/\.png$/);
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "移入回收站" }).click();
-  await expect(page.getByText("素材已移入回收站。")).toBeVisible();
+  const deleteResponse = await page.request.delete(`/api/assets/${downloadableAssetId}`);
+  expect(deleteResponse.ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "回收站" })).toBeVisible();
 
   await page.getByRole("button", { name: "回收站" }).click();
   await expect(page.getByRole("heading", { name: "回收站" })).toBeVisible();

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { ApiFailure, ApiSuccess, AssetGroupListItem, AssetGroupPage, CategoryListItem, ChannelListItem } from "@/lib/library/contracts";
 import { assetTypeOptions, countryName, countryOptions } from "@/lib/library/countries";
+import { generateUUID } from "@/lib/library/uuid";
 
 type UploadRow = {
   id: string;
@@ -83,7 +84,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
     setRows([]);
     setArchiveFile(null);
     setArchiveResult(null);
-    idempotencyKey.current = crypto.randomUUID();
+    idempotencyKey.current = generateUUID();
     setError("");
     if (archiveInput.current) archiveInput.current.value = "";
   }
@@ -101,11 +102,11 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
 
   function addFiles(files: FileList | null) {
     if (!files?.length || !hasCompleteContext) return;
-    idempotencyKey.current = crypto.randomUUID();
+    idempotencyKey.current = generateUUID();
     setRows((current) => [
       ...current,
       ...Array.from(files).map((file, index) => ({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         file,
         sortOrder: current.length + index + 1,
       })),
@@ -118,7 +119,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
     setArchiveFile(archive);
     setArchiveResult(null);
     setError("");
-    idempotencyKey.current = crypto.randomUUID();
+    idempotencyKey.current = generateUUID();
   }
 
   function updateRow(id: string, changes: Pick<UploadRow, "sortOrder">) {
@@ -145,7 +146,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
         setRows((current) => current.map((row) => ({ ...row, progress })));
       });
       setRows((current) => current.map((row, index) => ({ ...row, status: result.files[index]?.status, error: result.files[index]?.errorMessage ?? undefined, duplicateOfAssetId: result.files[index]?.duplicateOfAssetId ?? null, progress: 100 })));
-      idempotencyKey.current = crypto.randomUUID();
+      idempotencyKey.current = generateUUID();
     } catch (uploadError: unknown) {
       setError(uploadError instanceof Error ? uploadError.message : "上传失败。");
     } finally {
@@ -169,7 +170,7 @@ export function UploadWorkspace({ initialAssetGroupId }: UploadWorkspaceProps) {
     try {
       const result = await sendFormData<ArchiveUploadResponse>("/api/uploads/archive", formData, () => undefined);
       setArchiveResult(result);
-      idempotencyKey.current = crypto.randomUUID();
+      idempotencyKey.current = generateUUID();
     } catch (uploadError: unknown) {
       setError(uploadError instanceof Error ? uploadError.message : "ZIP 上传失败。");
     } finally {

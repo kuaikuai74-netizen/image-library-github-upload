@@ -116,6 +116,7 @@ model User {
   announcementReads AnnouncementRead[]
   documentPages  DocumentPage[]  @relation("DocumentPageCreatedBy")
   downloadBatches DownloadBatch[]
+  onlineMessages OnlineMessage[]
 
   @@index([status])
   @@index([role])
@@ -318,6 +319,16 @@ model DocumentPage {
 
   @@index([status, category, sortOrder])
   @@index([createdById, createdAt])
+}
+
+model OnlineMessage {
+  id        String   @id @default(cuid())
+  authorId  String
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, createdAt])
 }
 
 model DownloadBatch {

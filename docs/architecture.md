@@ -48,6 +48,7 @@ The browser communicates only with authenticated application endpoints. It never
 | `AuditLog` | Actor, operation, target object, details, and timestamp for management actions. |
 | `AssetTag` | Searchable labels. |
 | `UploadRequest` | Idempotent batch upload status and its per-file assets. |
+| `OnlineMessage` | A logged-in user's private support request and submission time. |
 
 Every `Asset` is created with an `assetGroupId`. The group, product, channel, country, image type, and related SKU references are database relationships, not filenames or browser state.
 
@@ -62,6 +63,7 @@ The first-level SPU library view supports selecting one or multiple libraries an
 - Sessions use signed JWT cookies. Every protected page and API request resolves the user from PostgreSQL again and rejects missing or `DISABLED` users.
 - Active roles are `SUPER_ADMIN`, `ASSET_ADMIN`, and `VIEWER`. `ASSET_ADMIN` is presented as 素材人员 and can read, download, upload, and delete. Server-side guards enforce permissions before routes return data or begin a mutation.
 - Authorize every route/action on the server; hide unavailable UI controls as a secondary safeguard.
+- Online-message reads are scoped to the authenticated author. The administrator feed uses a separate `SUPER_ADMIN`-guarded route.
 - Validate route and form parameters before entering services.
 - Keep secrets in `.env`, never in committed files.
 - Apply file type, size, image decode, and checksum validation server-side.

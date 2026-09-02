@@ -16,7 +16,7 @@ import { roleLabels, type LibraryUser } from "@/lib/auth/roles";
 import type { VisibleAnnouncement } from "@/lib/content/repository";
 import type { ApiFailure, ApiSuccess, AssetFilters, AssetGroupPage, CategoryListItem, ChannelListItem, LibraryAsset, Paginated, ProductListItem } from "@/lib/library/contracts";
 
-type AssetLibraryProps = { currentUser: LibraryUser; announcements: VisibleAnnouncement[] };
+type AssetLibraryProps = { currentUser: LibraryUser; announcements: VisibleAnnouncement[]; documentCount: number };
 
 type LibraryData = {
   queryKey: string;
@@ -79,7 +79,7 @@ function filtersFromParams(searchParams: URLSearchParams): Filters {
   };
 }
 
-export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) {
+export function AssetLibrary({ currentUser, announcements, documentCount }: AssetLibraryProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -94,13 +94,16 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
   const [productDownloadPending, setProductDownloadPending] = useState(false);
   const [recycleBinOpen, setRecycleBinOpen] = useState(false);
 
-  const state = useMemo(() => ({
-    channelId: searchParams.get("channelId") ?? "all",
-    categoryId: searchParams.get("categoryId") ?? "",
-    spu: searchParams.get("spu") ?? "",
-    filters: filtersFromParams(searchParams),
-    page: Number(searchParams.get("page") ?? "1") || 1,
-  }), [searchParams]);
+  const state = useMemo(() => {
+    const channelId = searchParams.get("channelId");
+    return {
+      channelId: channelId === "all" ? "" : channelId ?? "",
+      categoryId: searchParams.get("categoryId") ?? "",
+      spu: searchParams.get("spu") ?? "",
+      filters: filtersFromParams(searchParams),
+      page: Number(searchParams.get("page") ?? "1") || 1,
+    };
+  }, [searchParams]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -110,7 +113,7 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
 
   const productQueryString = useMemo(() => {
     const params = new URLSearchParams();
-    if (state.channelId !== "all") params.set("channelId", state.channelId);
+    if (state.channelId) params.set("channelId", state.channelId);
     if (state.categoryId) params.set("categoryId", state.categoryId);
     if (state.spu) params.set("spu", state.spu);
     else if (state.filters.query.trim()) params.set("q", state.filters.query.trim());
@@ -129,13 +132,16 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
     });
     next.delete("pageSize");
     const serialized = next.toString();
-    router.replace(serialized ? `${pathname}?${serialized}` : pathname);
+    router.replace(serialized ? `${pathname}?${serialized}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
+
+  const defaultChannelId = data?.channels[0]?.id ?? "";
+  const defaultCategoryId = data?.categories[0]?.id ?? "";
 
   useEffect(() => {
     const controller = new AbortController();
     const scopeParams = new URLSearchParams();
-    if (state.channelId !== "all") scopeParams.set("channelId", state.channelId);
+    if (state.channelId) scopeParams.set("channelId", state.channelId);
     if (state.categoryId) scopeParams.set("categoryId", state.categoryId);
     if (state.spu) scopeParams.set("spu", state.spu);
     const assetPageSize = pageSizeForColumns(columns);
@@ -162,8 +168,12 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
   }, [columns, dataKey, productQueryString, queryString, reloadVersion, state.categoryId, state.channelId, state.page, state.spu]);
 
   useEffect(() => {
-    if (!state.categoryId && !state.filters.query.trim() && data?.categories[0]) updateUrl({ categoryId: data.categories[0].id, page: "1" });
-  }, [data?.categories, state.categoryId, state.filters.query, updateUrl]);
+    if (!state.channelId && defaultChannelId) updateUrl({ channelId: defaultChannelId, categoryId: defaultCategoryId || undefined, spu: undefined, page: "1" });
+  }, [defaultCategoryId, defaultChannelId, state.channelId, updateUrl]);
+
+  useEffect(() => {
+    if (state.channelId && !state.categoryId && !state.filters.query.trim() && defaultCategoryId) updateUrl({ categoryId: defaultCategoryId, page: "1" });
+  }, [defaultCategoryId, state.categoryId, state.channelId, state.filters.query, updateUrl]);
 
   function updateFilters(filters: Filters) {
     updateUrl({
@@ -190,6 +200,22 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
 
   function clearFilters() {
     updateUrl({ countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" });
+  }
+
+  function changeChannel(channelId: string) {
+    if (channelId === state.channelId) return;
+    setSelectedIds(new Set());
+    setSelectedProductIds(new Set());
+    updateUrl({
+      channelId,
+      categoryId: state.categoryId || data?.categories[0]?.id,
+      spu: undefined,
+      countryCode: undefined,
+      assetType: undefined,
+      color: undefined,
+      q: undefined,
+      page: "1",
+    });
   }
 
   function openProductLibrary(spu: string) {
@@ -267,7 +293,7 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productIds: selectedIdsForDownload,
-          channelId: state.channelId === "all" ? undefined : state.channelId,
+          channelId: state.channelId || undefined,
           categoryId: state.categoryId || undefined,
         }),
       });
@@ -311,8 +337,7 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
   const canDownload = hasAssetPermission(currentUser.role, "download", { userId: currentUser.id });
   const canManageRecycleBin = currentUser.role !== "VIEWER";
   const activeCategory = data?.categories.find((category) => category.id === state.categoryId);
-  const activeChannelName = state.channelId === "all" ? "全部渠道" : data?.channels.find((channel) => channel.id === state.channelId)?.name ?? "渠道";
-  const totalAssets = data?.channels.reduce((total, channel) => total + channel.assetCount, 0) ?? 0;
+  const activeChannelName = data?.channels.find((channel) => channel.id === state.channelId)?.name ?? "渠道";
   const activeProduct = state.spu ? data?.products.items.find((product) => product.spu === state.spu) : null;
   const displayedAssetTotal = state.spu ? data?.assets.total ?? 0 : activeCategory?.assetCount ?? data?.products.items.reduce((total, product) => total + product.assetCount, 0) ?? 0;
   const displayedProductTotal = state.spu && activeProduct ? 1 : data?.products.total ?? 0;
@@ -360,8 +385,8 @@ export function AssetLibrary({ currentUser, announcements }: AssetLibraryProps) 
         announcements={announcements}
       />
       <div className="library-body">
-        <ChannelNav channels={data?.channels ?? []} activeChannel={state.channelId} totalCount={totalAssets} onChange={(channelId) => updateUrl({ channelId, categoryId: undefined, spu: undefined, countryCode: undefined, assetType: undefined, color: undefined, q: undefined, page: "1" })} />
-        <main className="workspace">
+        <ChannelNav channels={data?.channels ?? []} activeChannel={state.channelId} documentCount={documentCount} onChange={changeChannel} />
+        <main className="workspace" aria-busy={loading}>
           <section className="context-header" aria-labelledby="library-title">
             <p>当前浏览范围</p>
             <div>

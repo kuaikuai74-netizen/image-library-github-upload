@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, BookOpen, CheckCircle2, Images, Info, LogOut, ScrollText, Search, Shield, TriangleAlert, Upload, UserRound, Wrench, X } from "lucide-react";
+import { Bell, CheckCircle2, Images, Info, LogOut, ScrollText, Search, Shield, TriangleAlert, Upload, UserRound, Wrench, X } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -72,7 +72,7 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
         <span className="brand-mark"><Images aria-hidden="true" /></span>
         <span>
           <strong>跨境电商视觉资产</strong>
-          <small>集中管理跨境渠道图片素材</small>
+          <small>集中管理跨境渠道各类素材</small>
         </span>
       </div>
 
@@ -97,7 +97,6 @@ export function LibraryHeader({ query, onQueryChange, onUpload, currentUser, rol
           <span>公告</span>
           {unreadCount > 0 && <em>{unreadCount > 99 ? "99+" : unreadCount}</em>}
         </button>
-        <Link className="icon-button" href="/docs" aria-label="使用文档" title="使用文档"><BookOpen aria-hidden="true" /><span>文档</span></Link>
         {canAdmin && <Link className="icon-button" href="/admin" aria-label="管理后台" title="管理后台"><Shield aria-hidden="true" /><span>后台</span></Link>}
         {canUpload && <button className="icon-button upload-icon-button" type="button" onClick={onUpload} aria-label="上传素材" title="上传素材">
           <Upload aria-hidden="true" />

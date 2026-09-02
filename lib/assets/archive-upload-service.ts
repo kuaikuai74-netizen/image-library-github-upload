@@ -25,9 +25,9 @@ export type ArchiveUploadResult = {
   skippedEntries: ArchiveSkippedEntry[];
 };
 
-const maximumArchiveBytes = configuredLimit("MAX_ZIP_UPLOAD_BYTES", 262_144_000);
-const maximumArchiveEntries = configuredLimit("MAX_ZIP_ENTRIES", 500);
-const maximumArchiveUncompressedBytes = configuredLimit("MAX_ZIP_UNCOMPRESSED_BYTES", 314_572_800);
+const maximumArchiveBytes = configuredLimit("MAX_ZIP_UPLOAD_BYTES", 838_860_800);
+const maximumArchiveEntries = configuredLimit("MAX_ZIP_ENTRIES", 1_000);
+const maximumArchiveUncompressedBytes = configuredLimit("MAX_ZIP_UNCOMPRESSED_BYTES", 629_145_600);
 
 export async function uploadZipArchive(context: ArchiveUploadRequest, uploaderId: string, archive: File): Promise<ArchiveUploadResult> {
   validateArchive(archive);
